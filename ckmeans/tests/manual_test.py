@@ -25,7 +25,7 @@ n_rep = 100
 p_feat = 0.5
 p_samp = 0.5
 
-ckm_0 = ckmeans.CKmeans(k, n_rep)
+ckm_0 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
 
 t0 = time.time()
 ckm_0.fit(x_0)
@@ -43,6 +43,6 @@ print(t3 - t2)
 
 fig, ax = plt.subplots(1,1)
 ax.imshow(cmatrix)
-fig.savefig(path / 'test.png')
+fig.savefig(path / 'manual_test_img0.png')
 
 print(ckm_0.sils)

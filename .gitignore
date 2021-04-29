@@ -141,4 +141,4 @@ cython_debug/
 .vscode
 
 # test images
-test*.png
+*test*.png
