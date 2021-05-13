@@ -7,42 +7,68 @@ import matplotlib.pyplot as plt
 
 import ckmeans
 
-path = pathlib.Path(__file__).parent.absolute()
+if __name__ == '__main__':
 
-p = 10
+    path = pathlib.Path(__file__).parent.absolute()
 
-n0 = 50
-x0 = np.random.normal(0, 2, (n0, p))
-n1 = 50
-x1 = np.random.normal(-3, 1.5, (n1, p))
-n2 = 50
-x2 = np.random.normal(3, 2, (n2, p))
+    p = 10
 
-x_0 = np.r_[x0, x1, x2]
+    n0 = 50
+    x0 = np.random.normal(0, 2, (n0, p))
+    n1 = 50
+    x1 = np.random.normal(-3, 1.5, (n1, p))
+    n2 = 50
+    x2 = np.random.normal(3, 2, (n2, p))
 
-k = 10
-n_rep = 100
-p_feat = 0.5
-p_samp = 0.5
+    x_0 = np.r_[x0, x1, x2]
 
-ckm_0 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
+    k = 10
+    n_rep = 100
+    p_feat = 0.5
+    p_samp = 0.5
 
-t0 = time.time()
-ckm_0.fit(x_0)
-t1 = time.time()
+    ckm_0 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
+
+    t0 = time.time()
+    ckm_0.fit(x_0)
+    t1 = time.time()
 
 
-t2 = time.time()
-cmatrix = ckm_0.predict(x_0)
-t3 = time.time()
+    t2 = time.time()
+    cmatrix = ckm_0.predict(x_0)
+    t3 = time.time()
 
-print(cmatrix)
+    print(cmatrix)
 
-print(t1 - t0)
-print(t3 - t2)
+    print(t1 - t0)
+    print(t3 - t2)
 
-fig, ax = plt.subplots(1,1)
-ax.imshow(cmatrix)
-fig.savefig(path / 'manual_test_img0.png')
+    fig, ax = plt.subplots(1,1)
+    ax.imshow(cmatrix)
+    fig.savefig(path / 'manual_test_img0.png')
 
-print(ckm_0.sils)
+    print(ckm_0.sils)
+
+    # print('-----')
+    # ckm_1 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
+
+    # n_jobs = 2
+    # t0 = time.time()
+    # ckm_1.fit(x_0, n_jobs=n_jobs)
+    # t1 = time.time()
+
+
+    # t2 = time.time()
+    # cmatrix = ckm_0.predict(x_0)
+    # t3 = time.time()
+
+    # print(cmatrix)
+
+    # print(t1 - t0)
+    # print(t3 - t2)
+
+    # fig, ax = plt.subplots(1,1)
+    # ax.imshow(cmatrix)
+    # fig.savefig(path / 'manual_test_img0.png')
+
+    # print(ckm_0.sils)

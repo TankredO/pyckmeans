@@ -11,6 +11,21 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples
 
 class CKmeans:
+    '''CKmeans
+
+    Consensus K-Means.
+
+    Parameters
+    ----------
+    k : int
+        Number of clusters.
+    n_rep : int, optional
+        Number of K-Means to fit, by default 100
+    p_samp : float, optional
+        Proportion of samples (observations) to randomly draw per K-Means run, by default 0.8
+    p_feat : float, optional
+        Proportion of features (predictors) to randomly draw per K-Means run, by default 0.8
+    '''
     def __init__(
         self,
         k: int,
@@ -28,13 +43,35 @@ class CKmeans:
         self.sel_feat = None
         self.sils = None
 
-    def fit(self, x: numpy.ndarray, n_jobs: int = 1):
-        if n_jobs < 2:
-            self._fit(x)
-        else:
-            self._fit_parallel(x, n_jobs)
+    def fit(self, x: numpy.ndarray):
+        '''fit
 
-    def predict(self, x: numpy.ndarray):
+        Fit CKmeans.
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            n * m matrix, where n is the number of samples (observations) and m is
+            the number of features (predictors).
+        '''
+        self._fit(x)
+
+    def predict(self, x: numpy.ndarray) -> numpy.ndarray:
+        '''predict
+
+        Predict cluster membership of new data from fitted CKmeans.
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            n * m matrix, where n is the number of samples (observations) and m is
+            the number of features (predictors).
+
+        Returns
+        -------
+        numpy.ndarray
+            n * n consensus matrix, where n is the number of samples (observations) in x.
+        '''
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 
         for i, km in enumerate(self.kmeans):
@@ -45,6 +82,16 @@ class CKmeans:
         return cmatrix / self.n_rep
 
     def _fit(self, x: numpy.ndarray):
+        '''_fit
+
+        Internal sequential fitting function.
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            n * m matrix, where n is the number of samples (observations) and m is
+            the number of features (predictors).
+        '''
         self.kmeans = []
         self.sils = numpy.zeros(self.n_rep)
 
@@ -67,12 +114,6 @@ class CKmeans:
             self.centers[i] = km.cluster_centers_
 
             self.sils[i] = silhouette_score(x_subset, km.predict(x_subset))
-
-    def _fit_parallel(self, x: numpy.ndarray, n_jobs: int):
-        # n_samp = numpy.ceil(self.p_samp * x.shape[0]).astype(int)
-        # n_feat = numpy.ceil(self.p_feat * x.shape[1]).astype(int)
-
-        raise NotImplementedError()
 
 class WECR:
     def __init__(
