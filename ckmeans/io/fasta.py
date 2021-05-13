@@ -6,14 +6,44 @@
 
 import itertools
 import re
+from typing import Tuple, List
 
 import numpy as np
 
+class InvalidFastaAlignmentError(Exception):
+    pass
+
 WHITESPACE_RE = re.compile(r'\s+')
 
-def read_fasta_alignment(fasta_file: str):
+def read_fasta_alignment(fasta_file: str) -> Tuple[List[str], List[str]]:
+    '''read_fasta_alignment
+
+    Read fasta alignment file. This functions expects the fasta to be a valid aligment,
+    meaning that it should contain at least 2 sequences of the same length, including
+    gaps.
+
+    Parameters
+    ----------
+    fasta_file : str
+        Path to a fasta files.
+
+    Returns
+    -------
+    Tuple[List[str], List[str]]
+        Tuple, where the first element is a list of entry names and the second entry
+        is a list of sequences.
+
+    Raises
+    ------
+    InvalidFastaAlignmentError
+        Raised if less than 2 sequences are present in fasta_file.
+    InvalidFastaAlignmentError
+        Raised if the sequences have different lengths.
+    '''
+
     names = []
     seqs = []
+    first = True
     with open(fasta_file) as fasta_f:
         seq_buffer = []
         for line in fasta_f:
@@ -26,10 +56,29 @@ def read_fasta_alignment(fasta_file: str):
             # name line
             if _line[0] == '>':
                 names.append(_line[1:])
-                seqs.append(itertools.chain(*seq_buffer))
-                seq_buffer = []
+                if not first:
+                    seqs.append(list(itertools.chain(*seq_buffer)))
+                    seq_buffer = []
+                else:
+                    first = False
             # sequence line
             else:
                 seq_buffer.append(re.sub(WHITESPACE_RE, '', _line))
+
+        seqs.append(list(itertools.chain(*seq_buffer)))
+
+    # check alignment validity
+    n_seq = len(seqs)
+    if len(seqs) < 2:
+        msg = f'Invalid alignment: expected at least 2 entries but found only {n_seq}.'
+        raise InvalidFastaAlignmentError(msg)
+
+    seq_len = len(seqs[0])
+    for i, seq in enumerate(seqs[1:]):
+        cur_seq_len = len(seq)
+        if cur_seq_len != seq_len:
+            msg = f'Invalid alignment: expected all sequences to have length {seq_len}' +\
+                f'(length of sequence #0) but sequence #{i+1} is of length {cur_seq_len}.'
+            raise InvalidFastaAlignmentError(msg)
 
     return names, seqs
