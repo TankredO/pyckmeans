@@ -6,32 +6,33 @@
 
 import itertools
 import re
-from typing import Tuple, List
 
-import numpy as np
+import numpy
+
+from .nucleotide_alignment import NucleotideAlignment
 
 class InvalidFastaAlignmentError(Exception):
-    pass
+    '''InvalidFastaAlignmentError
+    '''
 
 WHITESPACE_RE = re.compile(r'\s+')
 
-def read_fasta_alignment(fasta_file: str) -> Tuple[List[str], List[str]]:
+def read_fasta_alignment(fasta_file: str) -> NucleotideAlignment:
     '''read_fasta_alignment
 
-    Read fasta alignment file. This functions expects the fasta to be a valid aligment,
+    Read fasta alignment file. This function expects the fasta to be a valid alignment,
     meaning that it should contain at least 2 sequences of the same length, including
     gaps.
 
     Parameters
     ----------
     fasta_file : str
-        Path to a fasta files.
+        Path to a fasta file.
 
     Returns
     -------
-    Tuple[List[str], List[str]]
-        Tuple, where the first element is a list of entry names and the second entry
-        is a list of sequences.
+    NucleotideAlignment
+        NucleotideAlignment object.
 
     Raises
     ------
@@ -63,22 +64,24 @@ def read_fasta_alignment(fasta_file: str) -> Tuple[List[str], List[str]]:
                     first = False
             # sequence line
             else:
-                seq_buffer.append(re.sub(WHITESPACE_RE, '', _line))
+                seq_buffer.append(re.sub(WHITESPACE_RE, '', _line).upper())
 
         seqs.append(list(itertools.chain(*seq_buffer)))
 
     # check alignment validity
     n_seq = len(seqs)
     if len(seqs) < 2:
-        msg = f'Invalid alignment: expected at least 2 entries but found only {n_seq}.'
+        msg = f'Expected at least 2 entries but found only {n_seq}.'
         raise InvalidFastaAlignmentError(msg)
 
     seq_len = len(seqs[0])
     for i, seq in enumerate(seqs[1:]):
         cur_seq_len = len(seq)
         if cur_seq_len != seq_len:
-            msg = f'Invalid alignment: expected all sequences to have length {seq_len}' +\
-                f'(length of sequence #0) but sequence #{i+1} is of length {cur_seq_len}.'
+            msg = f'Expected all sequences to have length {seq_len}' +\
+                f'(length of sequence #0) but sequence #{i+1} has length {cur_seq_len}.'
             raise InvalidFastaAlignmentError(msg)
 
-    return names, seqs
+    seqs = numpy.array(seqs)
+
+    return NucleotideAlignment(names, seqs)

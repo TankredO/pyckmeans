@@ -92,6 +92,10 @@ def test_read_fasta_alignment(prep_fasta_files):
     r_1 = fasta.read_fasta_alignment(prep_fasta_files[1])
     r_2 = fasta.read_fasta_alignment(prep_fasta_files[2])
 
+    print('r_0', r_0)
+    print('r_1', r_1)
+    print('r_2', r_2)
+
     with pytest.raises(InvalidFastaAlignmentError):
         r_3 = fasta.read_fasta_alignment(prep_fasta_files[3])
     with pytest.raises(InvalidFastaAlignmentError):
