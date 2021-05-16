@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from ckmeans.distance import alignment_distance, NucleotideAlignment
+from ckmeans.distance import alignment_distance, NucleotideAlignment, p_distance
 
 @pytest.fixture()
 def prepare_alignments():
@@ -31,6 +31,9 @@ def test_p_distance(prepare_alignments):
 
     d_0 = alignment_distance(prepare_alignments[0][0], 'p')
     d_0_expected = prepare_alignments[0][1]
-    assert np.all(np.abs(d_0 - d_0_expected) < eps)
+    assert np.all(np.abs(d_0.dist_mat - d_0_expected) < eps)
 
     print('d_0', d_0)
+
+    d_0_p = p_distance(prepare_alignments[0][0].sequences)
+    assert np.all(np.abs(d_0_p - d_0_expected) < eps)

@@ -7,22 +7,18 @@
 # https://github.com/biocore/scikit-bio/blob/0.5.4/skbio/stats/ordination/_principal_coordinate_analysis.py#L23
 
 from warnings import warn
-from typing import Optional, Tuple, Dict
+from typing import Iterable, Optional, Tuple, Dict, Union
 
 import numpy
 import pandas
 
-class InvalidCorrectionTypeError(Exception):
-    '''InvalidCorrectionTypeError'''
-
-class NegativeEigenvaluesCorrectionError(Exception):
-    '''FailedCorrectionError'''
+import ckmeans.distance
 
 class InvalidPCOAResultError(Exception):
     '''InvalidPCOAResultError'''
 
-class NegativeEigenvaluesWarning(Warning):
-    '''NegativeEigenvaluesWarning'''
+class IncompatibleNamesError(Exception):
+    '''IncompatibleNamesError'''
 
 class PCOAResult:
     def __init__(
@@ -35,6 +31,7 @@ class PCOAResult:
         correction: Optional[str] = None,
         eigvals_corr_rel: Optional[numpy.ndarray] = None,
         trace_corr: Optional[float] = None,
+        names: Optional[Iterable[str]] = None,
     ):
         self.vectors = vectors
         self.eigvals = eigvals
@@ -77,6 +74,15 @@ class PCOAResult:
                 'eigvals_rel_cum': self.eigvals_rel_cum,
             })
 
+        if not names is None:
+            n = vectors.shape[0]
+            if len(names) != n:
+                msg = f'Expected {n} names for {n}x{n} distance matrix ' +\
+                    f'but {len(names)} were passed.'
+                raise IncompatibleNamesError(msg)
+
+            self.names = list(names)
+
     def __repr__(self) -> str:
         str_repr = f'<PCOAResult; neg. eigvals: {self.negative_eigvals}, ' +\
             f'correction: {self.correction}>'
@@ -106,8 +112,17 @@ def _center_mat(dmat: numpy.ndarray) -> numpy.ndarray:
 
     return mat.dot(dmat).dot(mat)
 
+class InvalidCorrectionTypeError(Exception):
+    '''InvalidCorrectionTypeError'''
+
+class NegativeEigenvaluesCorrectionError(Exception):
+    '''FailedCorrectionError'''
+
+class NegativeEigenvaluesWarning(Warning):
+    '''NegativeEigenvaluesWarning'''
+
 def pcoa(
-    x: numpy.ndarray,
+    dist: Union[numpy.ndarray, ckmeans.distance.DistanceMatrix],
     correction: Optional[str] = None,
     eps: float = 0.0001
 ) -> Tuple[numpy.ndarray, Dict]:
@@ -117,8 +132,8 @@ def pcoa(
 
     Parameters
     ----------
-    x : numpy.ndarray
-        n*m data matrix, where n is the number of samples and m is the number of features.
+    x : Union[numpy.ndarray, ckmeans.distance.DistanceMatrix]
+        n*n distance matrix either as numpy ndarray or as ckmeans DistanceMatrix.
     correction: Optional[str]
         Correction for negative eigenvalues, by default None.
         Available corrections are:
@@ -130,9 +145,8 @@ def pcoa(
 
     Returns
     -------
-    Tuple[numpy.ndarray, Dict]
-        Tuple of principle coordinates as numpy.ndarray and eigenvalues, possibly corrected,
-        as dictionary.
+    PCOAResult
+        PCOA result object.
 
     Raises
     ------
@@ -142,6 +156,13 @@ def pcoa(
         Raised if correction parameter is set and correction of negative
         eigenvalues is not successful.
     '''
+    names = None
+    if isinstance(dist, ckmeans.distance.DistanceMatrix):
+        names = dist.names
+        x = dist.dist_mat
+    else:
+        x = dist
+
     n = x.shape[0]
 
     # center matrix
@@ -177,6 +198,7 @@ def pcoa(
             eigvals_rel=eigvals_rel,
             trace=trace,
             negative_eigvals=False,
+            names=names,
         )
 
     # negative eigenvalues
@@ -207,6 +229,7 @@ def pcoa(
                 negative_eigvals=True,
                 correction=None,
                 eigvals_corr_rel=eigvals_rel_corrected,
+                names = names,
             )
 
         # negative eigenvalues, correction
@@ -272,5 +295,6 @@ def pcoa(
             negative_eigvals=True,
             correction=correction,
             eigvals_corr_rel=eigvals_ncorr_rel,
-            trace_corr=trace_ncorr
+            trace_corr=trace_ncorr,
+            names = names,
         )

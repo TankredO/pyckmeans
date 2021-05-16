@@ -10,11 +10,11 @@ import numpy
 
 from .nucleotide_alignment import NucleotideAlignment
 
+WHITESPACE_RE = re.compile(r'\s+')
+
 class InvalidPhylipAlignmentError(Exception):
     '''InvalidPhylipAlignmentError
     '''
-
-WHITESPACE_RE = re.compile(r'\s+')
 
 def read_phylip_alignment(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
     '''read_phylip_alignment
@@ -80,3 +80,22 @@ def read_phylip_alignment(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
     seqs = numpy.array(seqs)
 
     return NucleotideAlignment(names, seqs)
+
+
+class InvalidPhylipMatrixError(Exception):
+    '''InvalidPhylipMatrixTypeError
+    '''
+
+def read_phylip_distmat(phylip_file: str) -> numpy.ndarray:
+    with open(phylip_file) as phylip_f:
+        # header
+        header_str = next(phylip_f)
+        try:
+            n_entries = int(header_str.strip())
+        except:
+            raise InvalidPhylipMatrixError('Malformed header.')
+
+        dist_mat = numpy.zeros((n_entries, n_entries))
+        names = []
+
+        raise NotImplementedError('')
