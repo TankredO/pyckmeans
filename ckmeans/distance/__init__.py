@@ -91,6 +91,7 @@ def alignment_distance(
         raise UnknownDistanceTypeError(msg)
 
 def p_distance(alignment: numpy.ndarray) -> numpy.ndarray:
+    # TODO
     dist_mat = numpy.zeros((alignment.shape[0], alignment.shape[0]))
 
     for i in range(alignment.shape[0]):

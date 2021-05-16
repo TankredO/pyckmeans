@@ -132,7 +132,7 @@ def pcoa(
 
     Parameters
     ----------
-    x : Union[numpy.ndarray, ckmeans.distance.DistanceMatrix]
+    dist : Union[numpy.ndarray, ckmeans.distance.DistanceMatrix]
         n*n distance matrix either as numpy ndarray or as ckmeans DistanceMatrix.
     correction: Optional[str]
         Correction for negative eigenvalues, by default None.
