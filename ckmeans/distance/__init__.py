@@ -3,7 +3,7 @@
     Module for distance calculations.
 '''
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 
 import numpy
 
@@ -51,6 +51,19 @@ class DistanceMatrix:
             String representation.
         '''
         return f'{repr(self.names)}\n{repr(self.dist_mat)}'
+
+    @property
+    def shape(self) -> Tuple[int]:
+        '''shape
+
+        Get matrix shape.
+
+        Returns
+        -------
+        Tuple[int]
+            Matrix shape.
+        '''
+        return self.dist_mat.shape
 
 class UnknownDistanceTypeError(Exception):
     '''UnknownDistanceTypeError'''

@@ -46,6 +46,8 @@ class PCOAResult:
         self.eigvals_corr_rel_cum = None
         self.trace_corr = None
 
+        self.names = None
+
         if negative_eigvals:
             if eigvals_corr_rel is None:
                 msg = 'negative_eigvals is True, expecting eigvals_corr_rel.'
@@ -125,7 +127,7 @@ def pcoa(
     dist: Union[numpy.ndarray, ckmeans.distance.DistanceMatrix],
     correction: Optional[str] = None,
     eps: float = 0.0001
-) -> Tuple[numpy.ndarray, Dict]:
+) -> PCOAResult:
     '''pcoa
 
     Principle Component Analysis.
@@ -296,5 +298,5 @@ def pcoa(
             correction=correction,
             eigvals_corr_rel=eigvals_ncorr_rel,
             trace_corr=trace_ncorr,
-            names = names,
+            names=names,
         )
