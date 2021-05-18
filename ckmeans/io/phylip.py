@@ -5,10 +5,10 @@
 
 import os
 import re
-from typing import Iterable, Tuple, List
 
 import numpy
 
+import ckmeans.distance
 from .nucleotide_alignment import NucleotideAlignment
 
 WHITESPACE_RE = re.compile(r'\s+')
@@ -17,7 +17,7 @@ class InvalidPhylipAlignmentError(Exception):
     '''InvalidPhylipAlignmentError
     '''
 
-def read_phylip_alignment(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
+def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
     '''read_phylip_alignment
 
     Read phylip alignment file. This function expects the phylip to be a valid alignment,
@@ -33,11 +33,8 @@ def read_phylip_alignment(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
 
     Returns
     -------
-    Tuple[List[str], numpy.ndarray]
-        Tuple, where the first element is a list of entry names and the second entry
-        is a n*m numpy ndarray, where n is the number of entries and m the number of
-        sites in the alignment.
-
+    NucleotideAlignment
+        Alignment as ckmeans.io NucleotideAlignment object.
     Raises
     ------
     InvalidPhylipAlignmentError
@@ -89,7 +86,7 @@ class InvalidPhylipMatrixError(Exception):
     '''InvalidPhylipMatrixTypeError
     '''
 
-def read_phylip_distmat(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
+def read_phylip_distmat(phylip_file: str) -> "ckmeans.distance.DistanceMatrix":
     '''read_phylip_distmat
 
     Read distance matrix in PHYLIP format.
@@ -102,9 +99,8 @@ def read_phylip_distmat(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
 
     Returns
     -------
-    Tuple[List[str], numpy.ndarray]
-        Tuple with two entries. The first one is a list of names.
-        The second one is the distance matrix as n*n numpy array.
+    ckmeans.distance.DistanceMatrix
+        Distance matrix as ckmeans.distance DistanceMatrix object.
 
     Raises
     ------
@@ -217,7 +213,7 @@ def read_phylip_distmat(phylip_file: str) -> Tuple[List[str], numpy.ndarray]:
         msg = f'Expected {n_entries} entries but found {len(names)}.'
         raise InvalidPhylipMatrixError(msg)
 
-    return names, dist_mat
+    return ckmeans.distance.DistanceMatrix(dist_mat, names)
 
 class IncompatibleNamesError(Exception):
     '''IncompatibleNamesError'''
@@ -225,8 +221,7 @@ class IncompatibleNamesError(Exception):
 NAME_PADDING = 64
 
 def write_phylip_distmat(
-    names: Iterable[str],
-    dist_mat: numpy.ndarray,
+    dist: "ckmeans.distance.DistanceMatrix",
     file_path: str,
     force: bool = False,
 ) -> None:
@@ -236,10 +231,8 @@ def write_phylip_distmat(
 
     Parameters
     ----------
-    names : Iterable[str]
-        Iterable of names.
-    dist_mat : numpy.ndarray
-        n*n distance matrix as numpy array.
+    dist : ckmeans.distance.DistanceMatrix
+        Distance matrix as ckmeans.distance DistanceMatrix object.
     file_path : str
         Output file path.
     force : bool, optional
@@ -262,6 +255,9 @@ def write_phylip_distmat(
         else:
             msg = f'A directory exists at path {file_path}.'
             raise Exception(msg)
+
+    dist_mat = dist.dist_mat
+    names = dist.names
 
     n_entries = dist_mat.shape[0]
     if len(names) != n_entries:

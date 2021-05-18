@@ -2,7 +2,8 @@ import pytest
 
 import numpy as np
 
-from ckmeans.distance import alignment_distance, NucleotideAlignment, p_distance
+from ckmeans.io import NucleotideAlignment
+from ckmeans.distance import alignment_distance, p_distance
 
 @pytest.fixture()
 def prepare_alignments():

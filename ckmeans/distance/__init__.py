@@ -7,7 +7,7 @@ from typing import Iterable, Optional, Tuple
 
 import numpy
 
-from ckmeans.io import NucleotideAlignment
+import ckmeans.io
 
 class IncompatibleNamesError(Exception):
     '''IncompatibleNamesError'''
@@ -69,7 +69,7 @@ class UnknownDistanceTypeError(Exception):
     '''UnknownDistanceTypeError'''
 
 def alignment_distance(
-    alignment: NucleotideAlignment,
+    alignment: "ckmeans.io.NucleotideAlignment",
     distance_type: str = 'p'
 ) -> DistanceMatrix:
     '''genetic_distance
@@ -78,7 +78,7 @@ def alignment_distance(
 
     Parameters
     ----------
-    alignment : NucleotideAlignment
+    alignment : ckmeans.io.NucleotideAlignment
         Nucleotide alignment.
     distance_type : str, optional
         Type of genetic distance to calculate, by default 'p'.

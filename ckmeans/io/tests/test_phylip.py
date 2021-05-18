@@ -209,13 +209,15 @@ def test_phylip_distance(prep_phylip_dist_files):
     eps = 0.0001
     
     # == reading
-    nm_0, d_0 = read_phylip_distmat(prep_phylip_dist_files[0])
+    d_0 = read_phylip_distmat(prep_phylip_dist_files[0])
+    nm_0 = d_0.names
     print('d_0:', d_0)
 
-    nm_1, d_1 = read_phylip_distmat(prep_phylip_dist_files[1])
+    d_1 = read_phylip_distmat(prep_phylip_dist_files[1])
+    nm_1 = d_1.names
     print('d_1:', d_1)
 
-    assert np.sum(np.abs(d_0 - d_1)) < eps
+    assert np.sum(np.abs(d_0.dist_mat - d_1.dist_mat)) < eps
 
 
     with pytest.raises(InvalidPhylipMatrixError):
@@ -232,14 +234,16 @@ def test_phylip_distance(prep_phylip_dist_files):
     # == writing
     with tempfile.TemporaryDirectory() as tempdir:
         d_file_0 = os.path.join(tempdir, 'd_file_0.dist')
-        write_phylip_distmat(nm_0, d_0, d_file_0)
+        write_phylip_distmat(d_0, d_file_0)
 
-        nm_0_r, d_0_r = read_phylip_distmat(d_file_0)
+        d_0_r = read_phylip_distmat(d_file_0)
+        nm_0_r = d_0_r.names
         assert all([a == b for a, b in zip(nm_0, nm_0_r)])
-        assert np.sum(np.abs(d_0 - d_0_r)) < eps
+        assert np.sum(np.abs(d_0.dist_mat - d_0_r.dist_mat)) < eps
 
         d_file_1 = os.path.join(tempdir, 'd_file_1.dist')
-        write_phylip_distmat(nm_1, d_1, d_file_1)
-        nm_1_r, d_1_r = read_phylip_distmat(d_file_1)
+        write_phylip_distmat(d_1, d_file_1)
+        d_1_r = read_phylip_distmat(d_file_1)
+        nm_1_r = d_1_r.names
         assert all([a == b for a, b in zip(nm_1, nm_1_r)])
-        assert np.sum(np.abs(d_1 - d_1_r)) < eps
+        assert np.sum(np.abs(d_1.dist_mat - d_1_r.dist_mat)) < eps
