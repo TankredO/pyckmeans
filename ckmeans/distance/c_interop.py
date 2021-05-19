@@ -18,14 +18,6 @@ def hello_world():
     '''
     lib.helloWorld()
 
-
-# globals
-GAP_PAIRWISE_DELETION = ctypes.c_int.in_dll(lib, 'GAP_PAIRWISE_DELETION')
-GAP_COMPLETE_DELETION = ctypes.c_int.in_dll(lib, 'GAP_COMPLETE_DELETION')
-
-AMBIGUITY_STRICT = ctypes.c_int.in_dll(lib, 'AMBIGUITY_STRICT')
-AMBIGUITY_RELAXED = ctypes.c_int.in_dll(lib, 'AMBIGUITY_STRICT')
-
 # p distance
 lib.pDistance.restype = None
 lib.pDistance.argtypes = [
@@ -44,26 +36,14 @@ lib.pDistance.argtypes = [
     ),
 ]
 
-class InvalidGapActionError(Exception):
-    '''InvalidGapActionError'''
-
 def p_distance(
     alignment: numpy.ndarray,
-    gap_action: str = 'pairwise-deletion',
+    pairwise_deletion: bool = True,
 ) -> numpy.ndarray:
     n, m = alignment.shape
 
     dist_mat = numpy.zeros((n, n), dtype=numpy.double)
 
-    if gap_action in ['pairwise', 'pairwise-deletion']:
-        gap_action = GAP_PAIRWISE_DELETION
-    elif gap_action in ['complete', 'complete-deletion']:
-        gap_action = GAP_COMPLETE_DELETION
-    else:
-        msg = f'Unknown gap action "{gap_action}". Available gap actions are ' +\
-            '"pairwise-deletion" and "complete-deletion".'
-        raise InvalidGapActionError(msg)
-
-    lib.pDistance(alignment, n, m, gap_action, dist_mat)
+    lib.pDistance(alignment, n, m, pairwise_deletion, dist_mat)
 
     return dist_mat

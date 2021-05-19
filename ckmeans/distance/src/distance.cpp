@@ -97,24 +97,15 @@ inline bool isTransition(std::uint8_t a, std::uint8_t b) {
 }
 inline bool isTransversion(std::uint8_t a, std::uint8_t b) {return !isTransition(a, b);}
 
-// 
-LIBRARY_API const int GAP_PAIRWISE_DELETION = 0;
-LIBRARY_API const int GAP_COMPLETE_DELETION = 1;
-
-//
-LIBRARY_API const int AMBIGUITY_STRICT = 0;
-LIBRARY_API const int AMBIGUITY_RELAXED = 1;
-
 // distances
 LIBRARY_API void pDistance(
     std::uint8_t* alignment, // nucleotide alignment
     int n,                   // number of entries
     int m,                   // number of sites
-    int gapAction,           // gap handling
+    bool pairwiseDeletion,   // gap handling
     double *distMat          // (output) distance matrix
 ) {
-    if (gapAction == GAP_PAIRWISE_DELETION) {
-        // naive p distance
+    if (pairwiseDeletion) {
         for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
             for (size_t i_b = (i_a + 1); i_b < n; ++i_b) {
                 // double to avoid casting later
@@ -142,7 +133,7 @@ LIBRARY_API void pDistance(
                 distMat[i_b * n + i_a] = d;
             }
         }
-    } else if (gapAction == GAP_COMPLETE_DELETION) {
+    } else {
         throw "Not implemented";
     }
 };
