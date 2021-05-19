@@ -6,10 +6,7 @@
 
 #include<iostream>
 #include<cstdint>
-
-LIBRARY_API void helloWorld(void) {
-    std::cout << "Hello world!" << std::endl;
-}
+#include<vector>
 
 /*
  *    Base encoding as used by R package ape.
@@ -97,7 +94,9 @@ inline bool isTransition(std::uint8_t a, std::uint8_t b) {
 }
 inline bool isTransversion(std::uint8_t a, std::uint8_t b) {return !isTransition(a, b);}
 
-// distances
+// == distances
+
+// p-distance
 LIBRARY_API void pDistance(
     std::uint8_t* alignment, // nucleotide alignment
     int n,                   // number of entries
@@ -105,6 +104,7 @@ LIBRARY_API void pDistance(
     bool pairwiseDeletion,   // gap handling
     double *distMat          // (output) distance matrix
 ) {
+    // pairwise deletion
     if (pairwiseDeletion) {
         for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
             for (size_t i_b = (i_a + 1); i_b < n; ++i_b) {
@@ -122,9 +122,6 @@ LIBRARY_API void pDistance(
                         nMatch += isMatch(a, b);
                     }
                 }
-                // std::cout << "i_a: " << i_a << "; i_b: " << i_b
-                //     << "; nMatch/nComp: " << nMatch << "/" << nComp
-                //     << std::endl;
 
                 double d = 1.0;
                 if (nComp > 0) d = 1 - nMatch / nComp;
@@ -133,7 +130,66 @@ LIBRARY_API void pDistance(
                 distMat[i_b * n + i_a] = d;
             }
         }
+    // complete deletion
     } else {
-        throw "Not implemented";
+        // find sites with missing values
+        std::vector<bool> skip(m);
+        for (size_t i = 0; i < m; ++i) {
+            skip[i] = false;
+            for (size_t j = 0; j < n; ++j) {
+                std::uint8_t base = alignment[j * m + i];
+
+                // TODO: think about whether it is a good idea to ignore wobbles
+                if (isGap(base) || !isKnown(base)) {
+                    skip[i] = true;
+                    break;
+                }
+            }
+        }
+
+        // p distance calculation
+        for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
+            for (size_t i_b = (i_a + 1); i_b < n; ++i_b) {
+                // double to avoid casting later
+                double nComp = 0;
+                double nMatch = 0;
+                for (size_t j = 0; j < m; ++j) {
+                    if (skip[j]) continue; // skip if site contains missing value
+                    std::uint8_t a = alignment[i_a * m + j];
+                    std::uint8_t b = alignment[i_b * m + j];
+                    
+                    nComp += 1;
+                    nMatch += isMatch(a, b);
+                }
+
+                double d = 1.0;
+                if (nComp > 0) d = 1 - nMatch / nComp;
+
+                distMat[i_a * n + i_b] = d;
+                distMat[i_b * n + i_a] = d;
+            }
+        }
     }
 };
+
+// Jukes-Cantor distance
+LIBRARY_API void jcDistance(
+    std::uint8_t* alignment, // nucleotide alignment
+    int n,                   // number of entries
+    int m,                   // number of sites
+    bool pairwiseDeletion,   // gap handling
+    double *distMat          // (output) distance matrix
+) {
+    std::cout << "WARNING: Not implemented" << std::endl;
+}
+
+// Kimura 2-parameter distance
+LIBRARY_API void k2pDistance(
+    std::uint8_t* alignment, // nucleotide alignment
+    int n,                   // number of entries
+    int m,                   // number of sites
+    bool pairwiseDeletion,   // gap handling
+    double *distMat          // (output) distance matrix
+) {
+    std::cout << "WARNING: Not implemented" << std::endl;
+}
