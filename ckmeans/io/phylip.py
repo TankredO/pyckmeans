@@ -9,7 +9,7 @@ import re
 import numpy
 
 import ckmeans.distance
-from .nucleotide_alignment import NucleotideAlignment
+from .nucleotide_alignment import InvalidAlignmentCharacterError, NucleotideAlignment
 
 WHITESPACE_RE = re.compile(r'\s+')
 
@@ -43,6 +43,8 @@ def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
         Raised if less than 2 entries are present in phylip_file.
     InvalidPhylipAlignmentError
         Raised if number of entries does not match header.
+    InvalidAlignmentCharacterError
+        Raised if an invalid character is encountered in the alignment file.
     '''
 
     names = []
@@ -77,9 +79,15 @@ def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
         msg = f'Expected {n_entries} entries but found {n_seq} instead.'
         raise InvalidPhylipAlignmentError(msg)
 
+    # construct output
     seqs = numpy.array(seqs)
-
-    return NucleotideAlignment(names, seqs)
+    try:
+        alignment = NucleotideAlignment(names, seqs)
+    except InvalidAlignmentCharacterError as err:
+        msg = f'{str(err)}. Possible causes are invalid characters in the ' + \
+            'alignment file, or mismatch between header and alignment dimension.'
+        raise InvalidAlignmentCharacterError(msg) from err
+    return alignment
 
 
 class InvalidPhylipMatrixError(Exception):

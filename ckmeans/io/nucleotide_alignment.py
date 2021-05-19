@@ -8,13 +8,52 @@ from typing import List, Tuple
 
 import numpy
 
+
+# Base encoding as used by R package ape.
+# See http://ape-package.ird.fr/misc/BitLevelCodingScheme.html
+#
+# Summary:
+# Most significant four bits are base information (A, G, C, T)
+# 0b00001000 -> base is known
+# 0b00000100 -> gap
+# 0b00000010 -> unknown base
+BASE_ENCODING = {
+    # bases
+    'A': 0b10001000,
+    'G': 0b01001000,
+    'C': 0b00101000,
+    'T': 0b00011000,
+    # wobbles
+    'R': 0b11000000, # A|G
+    'M': 0b10100000, # A|C
+    'W': 0b10010000, # A|T
+    'S': 0b01100000, # G|C
+    'K': 0b01010000, # G|T
+    'Y': 0b00110000, # C|T
+    'V': 0b11100000, # A|G|C
+    'H': 0b10110000, # A|C|T
+    'D': 0b11010000, # A|G|T
+    'B': 0b01110000, # G|C|T
+    'N': 0b11110000, # A|G|C|T
+    # gaps
+    '-': 0b00000100,
+    '~': 0b00000100,
+    ' ': 0b00000100,
+    # unknown/missing state
+    '?': 0b00000010
+}
+BASE_ENCODING_INVERSE = {
+    v:k for k, v in BASE_ENCODING.items() if k.isupper() or k == '-'
+}
+
 class InvalidAlignmentFileExtensionError(Exception):
-    '''InvalidAlignmentFileExtensionError
-    '''
+    '''InvalidAlignmentFileExtensionError'''
 
 class InvalidAlignmentFileFormatError(Exception):
-    '''InvalidAlignmentFileFormatError
-    '''
+    '''InvalidAlignmentFileFormatError'''
+
+class InvalidAlignmentCharacterError(Exception):
+    '''InvalidAlignmentCharacterError'''
 
 class NucleotideAlignment:
     '''NucleotideAlignment
@@ -26,13 +65,12 @@ class NucleotideAlignment:
     names : List[str]
         Sequence identifiers/names.
     sequences : numpy.ndarray
-        n*m alignment matrix, where n is the number of samples and m
+        n*m alignment matrix, where n is the number of entries and m
         is the number of sites.
     '''
 
     def __init__(self, names: List[str], sequences: numpy.ndarray):
         self.names = names
-        self.sequences = sequences
 
         # check validity
         n_names = len(names)
@@ -40,6 +78,20 @@ class NucleotideAlignment:
         if n_names != n_seqs:
             msg = f'Number of names ({n_names}) does not match number of sequences ({n_seqs}).'
             raise Exception(msg)
+
+        # encode strings as uint8, see BASE_ENCODING
+        if sequences.dtype != numpy.uint8:
+            try:
+                self.sequences = numpy.array(
+                    [[BASE_ENCODING[n] for n in row] for row in sequences],
+                    dtype=numpy.uint8,
+                )
+            except KeyError as k_err:
+                msg = f'Encountered unknown character in alignment: {str(k_err)}'
+                raise InvalidAlignmentCharacterError(msg) from k_err
+        else:
+            self.sequences = sequences
+
 
     @property
     def shape(self) -> Tuple[int, int]:

@@ -9,7 +9,7 @@ from ckmeans.pcoa import pcoa
 from ckmeans.core import CKmeans
 
 PHYLIP_STR_0 = \
-'''10 10
+'''10 9
 Sample0 ACTGTCATG
 Sample1 ACT--CATC
 Sample2 ACTCTCATG

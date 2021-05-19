@@ -26,7 +26,7 @@ class build_ext(build_ext_orig):
 
 distance_module = CTypesExtension(
     'ckmeans.distance.lib.distance',
-    sources=['ckmeans/distance/src/pdistance.cpp'],
+    sources=['ckmeans/distance/src/distance.cpp'],
 )
 
 ext_modules = [distance_module]
