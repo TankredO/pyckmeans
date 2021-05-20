@@ -250,7 +250,7 @@ def write_phylip_distmat(
     ------
     FileExistsError
         Raised if file at file_path already exists and force is False.
-    Exception
+    FileExistsError
         Raised if file_path points to an existing directory.
     IncompatibleNamesError
         Raised if names are incompatible with dist_mat.
@@ -262,7 +262,7 @@ def write_phylip_distmat(
             raise FileExistsError(msg)
         else:
             msg = f'A directory exists at path {file_path}.'
-            raise Exception(msg)
+            raise FileExistsError(msg)
 
     dist_mat = dist.dist_mat
     names = dist.names

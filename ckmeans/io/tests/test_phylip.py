@@ -1,4 +1,3 @@
-from numpy.testing._private.utils import tempdir
 import pytest
 import tempfile
 import os
