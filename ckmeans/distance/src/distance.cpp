@@ -7,6 +7,7 @@
 #include<iostream>
 #include<cstdint>
 #include<vector>
+#include<math.h>
 
 /*
  *    Base encoding as used by R package ape.
@@ -96,6 +97,29 @@ inline bool isTransversion(std::uint8_t a, std::uint8_t b) {return !isTransition
 
 // == distances
 
+// helpers
+std::vector<bool> completeDeletionSites(
+    std::uint8_t* alignment,
+    int n,
+    int m
+) {
+    std::vector<bool> skip(m);
+    for (size_t i = 0; i < m; ++i) {
+        skip[i] = false;
+        for (size_t j = 0; j < n; ++j) {
+            std::uint8_t base = alignment[j * m + i];
+
+            // TODO: think about whether it is a good idea to ignore wobbles
+            if (isGap(base) || !isKnown(base)) {
+                skip[i] = true;
+                break;
+            }
+        }
+    }
+
+    return skip;
+}
+
 // p-distance
 LIBRARY_API void pDistance(
     std::uint8_t* alignment, // nucleotide alignment
@@ -133,19 +157,7 @@ LIBRARY_API void pDistance(
     // complete deletion
     } else {
         // find sites with missing values
-        std::vector<bool> skip(m);
-        for (size_t i = 0; i < m; ++i) {
-            skip[i] = false;
-            for (size_t j = 0; j < n; ++j) {
-                std::uint8_t base = alignment[j * m + i];
-
-                // TODO: think about whether it is a good idea to ignore wobbles
-                if (isGap(base) || !isKnown(base)) {
-                    skip[i] = true;
-                    break;
-                }
-            }
-        }
+        std::vector<bool> skip = completeDeletionSites(alignment, n, m);
 
         // p distance calculation
         for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
@@ -180,7 +192,20 @@ LIBRARY_API void jcDistance(
     bool pairwiseDeletion,   // gap handling
     double *distMat          // (output) distance matrix
 ) {
-    std::cout << "WARNING: Not implemented" << std::endl;
+    // calculate p
+    pDistance(
+        alignment, n, m,
+        pairwiseDeletion,
+        distMat
+    );
+
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            double d = abs(- (3.0 / 4.0) * log(1 - (4.0 / 3.0) * distMat[i * n + j]));
+            if (isnan(d)) d = INFINITY;
+            distMat[i * n + j] = d;
+        } 
+    }
 }
 
 // Kimura 2-parameter distance
@@ -191,5 +216,83 @@ LIBRARY_API void k2pDistance(
     bool pairwiseDeletion,   // gap handling
     double *distMat          // (output) distance matrix
 ) {
-    std::cout << "WARNING: Not implemented" << std::endl;
+    // pairwise deletion
+    if (pairwiseDeletion) {
+        for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
+            for (size_t i_b = (i_a + 1); i_b < n; ++i_b) {
+                // double to avoid casting later
+                double nComp = 0;
+                double nTransitions = 0;
+                double nTransversions = 0;
+                for (size_t j = 0; j < m; ++j) {
+                    std::uint8_t a = alignment[i_a * m + j];
+                    std::uint8_t b = alignment[i_b * m + j];
+
+                    // TODO: think about this... This seems to be the same way as in ape
+                    // but I'm not sure that it is a good idea to ignore wobbles.
+                    if (!(isGap(a) || isGap(b)) && isKnown(a) && isKnown(b)) {
+                        nComp += 1;
+                        // if bases are the same there is neither transition
+                        // not transversion
+                        if (isMatch(a, b)) continue;
+
+                        bool isTs = isTransition(a, b);
+                        nTransitions += isTs;
+                        nTransversions += 1 - isTs;
+                    }
+                }
+
+                double d = INFINITY;
+                if (nComp > 0) {
+                    double p = nTransitions / nComp;
+                    double q = nTransversions / nComp;
+
+                    d = abs(-(1.0 / 2.0) * log((1 - 2 * p - q) * sqrt(1 - 2 * q)));
+                    if (isnan(d)) d = INFINITY;
+                } 
+
+                distMat[i_a * n + i_b] = d;
+                distMat[i_b * n + i_a] = d;
+            }
+        }
+    // complete deletion
+    } else {
+        // find sites with missing values
+        std::vector<bool> skip = completeDeletionSites(alignment, n, m);
+
+        for (size_t i_a = 0; i_a < (n - 1); ++i_a) {
+            for (size_t i_b = (i_a + 1); i_b < n; ++i_b) {
+                // double to avoid casting later
+                double nComp = 0;
+                double nTransitions = 0;
+                double nTransversions = 0;
+                for (size_t j = 0; j < m; ++j) {
+                    if (skip[j]) continue; // skip if site contains missing value
+                    std::uint8_t a = alignment[i_a * m + j];
+                    std::uint8_t b = alignment[i_b * m + j];
+
+                    nComp += 1;
+                    // if bases are the same there is neither transition
+                    // not transversion
+                    if (isMatch(a, b)) continue;
+
+                    bool isTs = isTransition(a, b);
+                    nTransitions += isTs;
+                    nTransversions += 1 - isTs;
+                }
+
+                double d = INFINITY;
+                if (nComp > 0) {
+                    double p = nTransitions / nComp;
+                    double q = nTransversions / nComp;
+
+                    d = abs(-(1.0 / 2.0) * log((1 - 2 * p - q) * sqrt(1 - 2 * q)));
+                    if (isnan(d)) d = INFINITY;
+                } 
+
+                distMat[i_a * n + i_b] = d;
+                distMat[i_b * n + i_a] = d;
+            }
+        }
+    }
 }
