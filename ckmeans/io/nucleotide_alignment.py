@@ -4,7 +4,7 @@
 '''
 
 import os
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 
 import numpy
 
@@ -54,6 +54,9 @@ class InvalidAlignmentFileFormatError(Exception):
 
 class InvalidAlignmentCharacterError(Exception):
     '''InvalidAlignmentCharacterError'''
+
+class InvalidSeqIORecordsError(Exception):
+    '''InvalidSeqIORecordsError'''
 
 class NucleotideAlignment:
     '''NucleotideAlignment
@@ -116,6 +119,47 @@ class NucleotideAlignment:
         '''
         shape = self.shape
         return f'<NucleotideAlignment; #samples: {shape[0]}, #sites: {shape[1]}>'
+
+    @classmethod
+    def from_bp_seqio_records(
+        cls,
+        records: Iterable['Bio.SeqRecord.SeqRecord'],
+    ) -> 'NucleotideAlignment':
+        '''from_bp_seqio_records
+
+        Build NucleotideAlignment from iterable of Bio.SeqRecord.SeqRecord.
+        Such an iterable is, for example, returned by Bio.SeqIO.parse() or
+        can be constructed using Bio.Align.MultipleSequenceAlignment().
+
+        Returns
+        -------
+        NucleotideAlignment
+            NucleotideAlignment object.
+
+        Raises
+        ------
+        InvalidSeqIORecordsError
+            Raised of sequences have different lengths.
+        '''
+        names = []
+        seqs = []
+
+        for record in records:
+            names.append(record.id)
+            seqs.append(list(record.seq))
+
+        # check if all sequences have same length
+        seq_len = len(seqs[0])
+        for i, seq in enumerate(seqs[1:]):
+            cur_seq_len = len(seq)
+            if cur_seq_len != seq_len:
+                msg = f'Expected all sequences to have length {seq_len}' +\
+                    f'(length of sequence #0) but sequence #{i+1} has length {cur_seq_len}.'
+                raise InvalidSeqIORecordsError(msg)
+
+        seqs = numpy.array(seqs)
+
+        return cls(names, seqs)
 
     @staticmethod
     def from_file(file_path: str, file_format='auto') -> 'NucleotideAlignment':

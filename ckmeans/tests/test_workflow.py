@@ -39,8 +39,8 @@ def prep_phylip_files():
 
 def test_simple_worflow(prep_phylip_files):
     na_0 = read_alignment(prep_phylip_files[0])
-    d_0 = alignment_distance(na_0, 'p')
-    pcoares_0 = pcoa(d_0, 'lingoes')
+    d_0_p = alignment_distance(na_0, 'p')
+    pcoares_0 = pcoa(d_0_p, 'lingoes')
     ckm_0 = CKmeans(k=2, n_rep=10)
     ckm_0.fit(pcoares_0.vectors)
     cm_0 = ckm_0.predict(pcoares_0.vectors)

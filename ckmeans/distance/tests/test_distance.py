@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 
 from ckmeans.io import NucleotideAlignment
-from ckmeans.distance import alignment_distance, p_distance
+from ckmeans.distance import alignment_distance, p_distance, InvalidDistanceTypeError
 
 @pytest.fixture()
 def prepare_alignments():
@@ -38,3 +38,16 @@ def test_p_distance(prepare_alignments):
 
     d_0_p = p_distance(prepare_alignments[0][0].sequences)
     assert np.all(np.abs(d_0_p - d_0_expected) < eps)
+
+def test_distances_simples(prepare_alignments):
+    alignment_distance(prepare_alignments[0][0], 'p', True)
+    alignment_distance(prepare_alignments[0][0], 'p', False)
+    alignment_distance(prepare_alignments[0][0], 'jc', True)
+    alignment_distance(prepare_alignments[0][0], 'jc', False)
+    alignment_distance(prepare_alignments[0][0], 'k2p', True)
+    alignment_distance(prepare_alignments[0][0], 'k2p', False)
+
+    with pytest.raises(InvalidDistanceTypeError):
+        alignment_distance(prepare_alignments[0][0], 'xyz', True)
+    with pytest.raises(InvalidDistanceTypeError):
+        alignment_distance(prepare_alignments[0][0], 'xyz', False)

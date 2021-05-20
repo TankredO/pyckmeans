@@ -9,6 +9,8 @@ import numpy
 
 import ckmeans.io
 
+from .c_interop import p_distance, jc_distance, k2p_distance
+
 class IncompatibleNamesError(Exception):
     '''IncompatibleNamesError'''
 
@@ -65,12 +67,13 @@ class DistanceMatrix:
         '''
         return self.dist_mat.shape
 
-class UnknownDistanceTypeError(Exception):
+class InvalidDistanceTypeError(Exception):
     '''UnknownDistanceTypeError'''
 
 def alignment_distance(
     alignment: "ckmeans.io.NucleotideAlignment",
-    distance_type: str = 'p'
+    distance_type: str = 'p',
+    pairwise_deletion: bool = True,
 ) -> DistanceMatrix:
     '''genetic_distance
 
@@ -82,7 +85,14 @@ def alignment_distance(
         Nucleotide alignment.
     distance_type : str, optional
         Type of genetic distance to calculate, by default 'p'.
-
+        Available distance types are p-distances ('p'),
+        Jukes-Cantor distances ('jc'), and Kimura 2-paramater distances
+        ('k2p').
+    pairwise_deletion : bool
+        Use pairwise deletion as action to deal with missing data.
+        If False, complete deletion is applied.
+        Gaps ("-", "~", " "), "?", and ambiguous bases are treated as
+        missing data.
     Returns
     -------
     DistanceMatrix
@@ -90,30 +100,25 @@ def alignment_distance(
 
     Raises
     ------
-    UnknownDistanceTypeError
+    InvalidDistanceTypeError
         Raised if invalid distance_type is passed.
     '''
-
-    if distance_type == 'p':
+    distance_type = distance_type.lower()
+    if distance_type in ['p', 'raw']:
         return DistanceMatrix(
-            p_distance(alignment.sequences),
+            p_distance(alignment.sequences, pairwise_deletion),
+            alignment.names,
+        )
+    elif distance_type in ['jc', 'jc69']:
+        return DistanceMatrix(
+            jc_distance(alignment.sequences, pairwise_deletion),
+            alignment.names,
+        )
+    elif distance_type in ['k2p', 'k80']:
+        return DistanceMatrix(
+            k2p_distance(alignment.sequences, pairwise_deletion),
             alignment.names,
         )
     else:
         msg = f'Unknown distance type "{distance_type}".'
-        raise UnknownDistanceTypeError(msg)
-
-def p_distance(alignment: numpy.ndarray) -> numpy.ndarray:
-    # TODO
-    dist_mat = numpy.zeros((alignment.shape[0], alignment.shape[0]))
-
-    for i in range(alignment.shape[0]):
-        for j in range(i, alignment.shape[0]):
-            if i == j:
-                dist_mat[i, j] = 0.0
-            else:
-                p_dist = numpy.sum(alignment[i,] != alignment[j,]) / alignment.shape[1]
-                dist_mat[i, j] = p_dist
-                dist_mat[j, i] = p_dist
-
-    return dist_mat
+        raise InvalidDistanceTypeError(msg)
