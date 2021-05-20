@@ -10,7 +10,11 @@ from .nucleotide_alignment import \
     InvalidAlignmentFileFormatError
 from .phylip import \
     read_phylip_alignment, \
-    InvalidPhylipAlignmentError
+    InvalidPhylipAlignmentError, \
+    read_phylip_distmat, \
+    InvalidPhylipMatrixError
 from .fasta import \
     read_fasta_alignment, \
     InvalidFastaAlignmentError
+from .csv import \
+    read_csv_distmat

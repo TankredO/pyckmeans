@@ -94,7 +94,7 @@ class InvalidPhylipMatrixError(Exception):
     '''InvalidPhylipMatrixTypeError
     '''
 
-def read_phylip_distmat(phylip_file: str) -> "ckmeans.distance.DistanceMatrix":
+def read_phylip_distmat(phylip_file: str) -> 'ckmeans.distance.DistanceMatrix':
     '''read_phylip_distmat
 
     Read distance matrix in PHYLIP format.
@@ -229,7 +229,7 @@ class IncompatibleNamesError(Exception):
 NAME_PADDING = 64
 
 def write_phylip_distmat(
-    dist: "ckmeans.distance.DistanceMatrix",
+    dist: 'ckmeans.distance.DistanceMatrix',
     file_path: str,
     force: bool = False,
 ) -> None:

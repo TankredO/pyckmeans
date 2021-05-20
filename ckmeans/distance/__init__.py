@@ -67,6 +67,19 @@ class DistanceMatrix:
         '''
         return self.dist_mat.shape
 
+    @staticmethod
+    def from_phylip(file_path: str) -> 'DistanceMatrix':
+        '''from_phylip
+
+        Read PHYLIP distance matrix.
+
+        Returns
+        -------
+        DistanceMatrix
+            DistanceMatrix object.
+        '''
+        return ckmeans.io.phylip.read_phylip_distmat(file_path)
+
 class InvalidDistanceTypeError(Exception):
     '''UnknownDistanceTypeError'''
 
