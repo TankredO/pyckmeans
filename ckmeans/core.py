@@ -3,13 +3,82 @@
     Module for ckmeans core functionality.
 '''
 
-import multiprocessing
-from typing import Union
+from typing import Callable, Iterable, List, Optional, Union
 
 import numpy
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, silhouette_samples
+from sklearn.metrics import (
+    silhouette_score,
+    silhouette_samples,
+    davies_bouldin_score,
+)
 
+def wss(
+    x: numpy.ndarray,
+    centers: numpy.ndarray,
+    cl: Iterable[int]
+) -> float:
+    '''wss
+
+    Calculate within cluster sum of squares.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        n * m matrix, where n is the number of samples (observations) and m is
+        the number of features (predictors).
+    centers : numpy.ndarray
+        k * m matrix of cluster centers (centroids), where k is the number of
+        clusters and m is the number of features (predictors).
+    cl : Iterable[int]
+        Iterable of length n, containing cluster membership as coded as integer.
+
+    Returns
+    -------
+    float
+        Within cluster sum of squares.
+    '''
+    res = 0
+    for cur_cl in numpy.unique(cl):
+        cur_x = x[cl == cur_cl, ]
+        res += ((cur_x - centers[cur_cl, :]) ** 2).sum()
+
+    return res
+
+def bic_kmeans(x, centers, cl) -> float:
+    '''bic_kmeans
+
+    Calculate the Bayesian Information Criterion (BIC) for a KMeans result.
+    The formula is using the BIC calculation for the Gaussian special case.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        n * m matrix, where n is the number of samples (observations) and m is
+        the number of features (predictors).
+    centers : numpy.ndarray
+        k * m matrix of cluster centers (centroids), where k is the number of
+        clusters and m is the number of features (predictors).
+    cl : Iterable[int]
+        Iterable of length n, containing cluster membership as coded as integer.
+
+    Returns
+    -------
+    float
+        BIC
+    '''
+    k = len(numpy.unique(cl))
+    n = x.shape[0]
+
+    rss = wss(x, centers, cl)
+
+    return n * numpy.log(rss/n) + numpy.log(n) * k
+
+class InvalidClusteringMetric(Exception):
+    '''InvalidClusteringMetric'''
+
+# TODO:
+# - add hook for monitoring progress
 class CKmeans:
     '''CKmeans
 
@@ -25,25 +94,47 @@ class CKmeans:
         Proportion of samples (observations) to randomly draw per K-Means run, by default 0.8
     p_feat : float, optional
         Proportion of features (predictors) to randomly draw per K-Means run, by default 0.8
+    metrics : List[str]
+        Clustering quality metrics to calculate. Available metrics are
+        "sil" (Silhouette Index), "bic" (Bayesian Information Criterion),
+        "db" (Davies-Bouldin Index).
     '''
+
+    AVAILABLE_METRICS = ['sil', 'bic', 'db']
+
     def __init__(
         self,
         k: int,
         n_rep: int = 100,
         p_samp: float = 0.8,
         p_feat: float = 0.8,
+        metrics: List[str] = ['sil', 'bic'],
     ):
         self.k = k
         self.n_rep = n_rep
         self.p_samp = p_samp
         self.p_feat = p_feat
 
+        for metric in metrics:
+            if not metric in self.AVAILABLE_METRICS:
+                am_str = ", ".join(self.AVAILABLE_METRICS)
+                msg = f'Unknown metric "{metric}". Available metrics are {am_str}.'
+                raise InvalidClusteringMetric(msg)
+
+        self._metrics = metrics
+
         self.centers = None
         self.kmeans = None
         self.sel_feat = None
         self.sils = None
+        self.bics = None
+        self.dbs = None
 
-    def fit(self, x: numpy.ndarray):
+    def fit(
+        self,
+        x: numpy.ndarray,
+        progress_callback: Optional[Callable] = None,
+    ):
         '''fit
 
         Fit CKmeans.
@@ -53,10 +144,16 @@ class CKmeans:
         x : numpy.ndarray
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+        progress_callback : Optional[Callable]
+            Optional callback function for progress reporting.
         '''
         self._fit(x)
 
-    def predict(self, x: numpy.ndarray) -> numpy.ndarray:
+    def predict(
+        self,
+        x: numpy.ndarray,
+        progress_callback: Optional[Callable] = None,
+    ) -> numpy.ndarray:
         '''predict
 
         Predict cluster membership of new data from fitted CKmeans.
@@ -66,6 +163,8 @@ class CKmeans:
         x : numpy.ndarray
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+        progress_callback : Optional[Callable]
+            Optional callback function for progress reporting.
 
         Returns
         -------
@@ -81,7 +180,11 @@ class CKmeans:
 
         return cmatrix / self.n_rep
 
-    def _fit(self, x: numpy.ndarray):
+    def _fit(
+        self,
+        x: numpy.ndarray,
+        progress_callback: Optional[Callable] = None,
+    ):
         '''_fit
 
         Internal sequential fitting function.
@@ -91,9 +194,18 @@ class CKmeans:
         x : numpy.ndarray
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+        progress_callback : Optional[Callable]
+            Optional callback function for progress reporting.
         '''
         self.kmeans = []
-        self.sils = numpy.zeros(self.n_rep)
+
+        if len(self._metrics) > 0:
+            if 'sil' in self._metrics:
+                self.sils = numpy.zeros(self.n_rep)
+            if 'bic' in self._metrics:
+                self.bics = numpy.zeros(self.n_rep)
+            if 'db' in self._metrics:
+                self.dbs = numpy.zeros(self.n_rep)
 
         n_samp = numpy.ceil(self.p_samp * x.shape[0]).astype(int)
         n_feat = numpy.ceil(self.p_feat * x.shape[1]).astype(int)
@@ -113,7 +225,16 @@ class CKmeans:
             self.kmeans.append(km)
             self.centers[i] = km.cluster_centers_
 
-            self.sils[i] = silhouette_score(x_subset, km.predict(x_subset))
+            if len(self._metrics) > 0:
+                cl = km.predict(x_subset)
+
+                if 'sil' in self._metrics:
+                    self.sils[i] = silhouette_score(x_subset, cl)
+                if 'bic' in self._metrics:
+                    self.bics[i] = bic_kmeans(x_subset, km.cluster_centers_, cl)
+                if 'db' in self._metrics:
+                    self.dbs[i] = davies_bouldin_score(x_subset, cl)
+
 
 class WECR:
     def __init__(

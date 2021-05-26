@@ -27,7 +27,17 @@ if __name__ == '__main__':
     p_feat = 0.5
     p_samp = 0.5
 
-    ckm_0 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
+    ckm_0 = ckmeans.CKmeans(
+        k=k,
+        n_rep=n_rep,
+        p_samp=p_samp,
+        p_feat=p_feat,
+        metrics=[
+            'sil',
+            'bic',
+            'db'
+        ]
+    )
 
     t0 = time.time()
     ckm_0.fit(x_0)
@@ -47,7 +57,9 @@ if __name__ == '__main__':
     ax.imshow(cmatrix)
     fig.savefig(path / 'manual_test_img0.png')
 
-    print(ckm_0.sils)
+    print('sils:', ckm_0.sils)
+    print('bics:', ckm_0.bics)
+    print('dbs:', ckm_0.dbs)
 
     # print('-----')
     # ckm_1 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
