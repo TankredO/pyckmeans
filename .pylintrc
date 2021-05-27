@@ -448,7 +448,8 @@ good-names=i,
            cl,
            km,
            n,
-           m
+           m,
+           ks
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted

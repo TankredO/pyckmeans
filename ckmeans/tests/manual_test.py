@@ -4,6 +4,10 @@ import time
 import numpy as np
 import numpy.random as random
 import matplotlib.pyplot as plt
+try:
+    import tqdm
+except:
+    tqdm = None
 
 import ckmeans
 
@@ -27,6 +31,7 @@ if __name__ == '__main__':
     p_feat = 0.5
     p_samp = 0.5
 
+    
     ckm_0 = ckmeans.CKmeans(
         k=k,
         n_rep=n_rep,
@@ -35,18 +40,32 @@ if __name__ == '__main__':
         metrics=[
             'sil',
             'bic',
-            'db'
+            'db',
+            'ch',
         ]
     )
 
-    t0 = time.time()
-    ckm_0.fit(x_0)
-    t1 = time.time()
+    print('fitting ...')
+    if tqdm:
+        with tqdm.tqdm(total=n_rep) as bar:
+            t0 = time.time()
+            ckm_0.fit(x_0, progress_callback=bar.update)
+            t1 = time.time()
+    else:
+        t0 = time.time()
+        ckm_0.fit(x_0)
+        t1 = time.time()
 
-
-    t2 = time.time()
-    cmatrix = ckm_0.predict(x_0)
-    t3 = time.time()
+    print('predicting ...')
+    if tqdm:
+        with tqdm.tqdm(total=n_rep) as bar:
+            t2 = time.time()
+            cmatrix = ckm_0.predict(x_0, progress_callback=bar.update)
+            t3 = time.time()
+    else:
+        t2 = time.time()
+        cmatrix = ckm_0.predict(x_0)
+        t3 = time.time()
 
     print(cmatrix)
 
@@ -60,27 +79,4 @@ if __name__ == '__main__':
     print('sils:', ckm_0.sils)
     print('bics:', ckm_0.bics)
     print('dbs:', ckm_0.dbs)
-
-    # print('-----')
-    # ckm_1 = ckmeans.CKmeans(k=k, n_rep=n_rep, p_samp=p_samp, p_feat=p_feat)
-
-    # n_jobs = 2
-    # t0 = time.time()
-    # ckm_1.fit(x_0, n_jobs=n_jobs)
-    # t1 = time.time()
-
-
-    # t2 = time.time()
-    # cmatrix = ckm_0.predict(x_0)
-    # t3 = time.time()
-
-    # print(cmatrix)
-
-    # print(t1 - t0)
-    # print(t3 - t2)
-
-    # fig, ax = plt.subplots(1,1)
-    # ax.imshow(cmatrix)
-    # fig.savefig(path / 'manual_test_img0.png')
-
-    # print(ckm_0.sils)
+    print('chs:', ckm_0.chs)

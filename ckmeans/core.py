@@ -3,7 +3,7 @@
     Module for ckmeans core functionality.
 '''
 
-from typing import Callable, Iterable, List, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 import numpy
 from sklearn.cluster import KMeans
@@ -11,8 +11,12 @@ from sklearn.metrics import (
     silhouette_score,
     silhouette_samples,
     davies_bouldin_score,
+    calinski_harabasz_score,
 )
 
+# Could get this directly from sklearn.cluster.KMeans.inertia_,
+# but will keep this for flexibility. wss results and inertia_ values
+# match perfectly.
 def wss(
     x: numpy.ndarray,
     centers: numpy.ndarray,
@@ -77,8 +81,6 @@ def bic_kmeans(x, centers, cl) -> float:
 class InvalidClusteringMetric(Exception):
     '''InvalidClusteringMetric'''
 
-# TODO:
-# - add hook for monitoring progress
 class CKmeans:
     '''CKmeans
 
@@ -91,16 +93,20 @@ class CKmeans:
     n_rep : int, optional
         Number of K-Means to fit, by default 100
     p_samp : float, optional
-        Proportion of samples (observations) to randomly draw per K-Means run, by default 0.8
+        Proportion of samples (observations) to randomly draw per K-Means run, by default 0.8.
+        The resulting number of samples will be rounded up. I.e. if number of samples is 10 and
+        p_samp is 0.75, each K-Means will use 8 randomly drawn samples (0.72 * 10 = 7.2, 7.2 -> 8).
     p_feat : float, optional
-        Proportion of features (predictors) to randomly draw per K-Means run, by default 0.8
-    metrics : List[str]
+        Proportion of features (predictors) to randomly draw per K-Means run, by default 0.8.
+        The resulting number of features will be rounded up. I.e. if number of features is 10 and
+        p_feat is 0.72, each K-Means will use 8 randomly drawn features (0.72 * 10 = 7.5, 7.2 -> 8).
+    metrics : Iterable[str]
         Clustering quality metrics to calculate. Available metrics are
         "sil" (Silhouette Index), "bic" (Bayesian Information Criterion),
-        "db" (Davies-Bouldin Index).
+        "db" (Davies-Bouldin Index), "ch" (Calinski-Harabasz).
     '''
 
-    AVAILABLE_METRICS = ['sil', 'bic', 'db']
+    AVAILABLE_METRICS = ('sil', 'bic', 'db', 'ch')
 
     def __init__(
         self,
@@ -108,7 +114,7 @@ class CKmeans:
         n_rep: int = 100,
         p_samp: float = 0.8,
         p_feat: float = 0.8,
-        metrics: List[str] = ['sil', 'bic'],
+        metrics: Iterable[str] = ('sil', 'bic'),
     ):
         self.k = k
         self.n_rep = n_rep
@@ -123,12 +129,13 @@ class CKmeans:
 
         self._metrics = metrics
 
-        self.centers = None
         self.kmeans = None
+        self.centers = None
         self.sel_feat = None
         self.sils = None
         self.bics = None
         self.dbs = None
+        self.chs = None
 
     def fit(
         self,
@@ -147,7 +154,11 @@ class CKmeans:
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
         '''
-        self._fit(x)
+
+        # _fit is called here to be able to extend later on.
+        # the plan is to add a parallel fitting function later on
+        # e.g. _fit_parallel(x, progress_callback, n_cores)
+        self._fit(x, progress_callback=progress_callback)
 
     def predict(
         self,
@@ -178,6 +189,9 @@ class CKmeans:
             a, b = numpy.meshgrid(cl, cl)
             cmatrix += a == b
 
+            if progress_callback:
+                progress_callback()
+
         return cmatrix / self.n_rep
 
     def _fit(
@@ -197,6 +211,8 @@ class CKmeans:
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
         '''
+        self._reset()
+
         self.kmeans = []
 
         if len(self._metrics) > 0:
@@ -206,6 +222,8 @@ class CKmeans:
                 self.bics = numpy.zeros(self.n_rep)
             if 'db' in self._metrics:
                 self.dbs = numpy.zeros(self.n_rep)
+            if 'ch' in self._metrics:
+                self.chs = numpy.zeros(self.n_rep)
 
         n_samp = numpy.ceil(self.p_samp * x.shape[0]).astype(int)
         n_feat = numpy.ceil(self.p_feat * x.shape[1]).astype(int)
@@ -234,7 +252,23 @@ class CKmeans:
                     self.bics[i] = bic_kmeans(x_subset, km.cluster_centers_, cl)
                 if 'db' in self._metrics:
                     self.dbs[i] = davies_bouldin_score(x_subset, cl)
+                if 'ch' in self._metrics:
+                    self.chs[i] = calinski_harabasz_score(x_subset, cl)
 
+            if progress_callback:
+                progress_callback()
+
+    def _reset(self):
+        '''_reset
+
+        Reset CKmeans object.
+        '''
+        self.centers = None
+        self.kmeans = None
+        self.sel_feat = None
+        self.sils = None
+        self.bics = None
+        self.dbs = None
 
 class WECR:
     def __init__(
@@ -315,6 +349,7 @@ class WECR:
                 # == cluster consistencies
                 if n_constraints == 0:
                     cluster_consistencies[j] = 1
+                    n_cl_contraints = 0
                 else:
                     cl_ml = must_link[numpy.isin(must_link, cl_idcs).any(1), :]
                     cl_mnl = must_not_link[numpy.isin(must_not_link, cl_idcs).any(1), :]
