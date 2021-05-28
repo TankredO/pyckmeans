@@ -102,8 +102,10 @@ class CKmeans:
         p_feat is 0.72, each K-Means will use 8 randomly drawn features (0.72 * 10 = 7.5, 7.2 -> 8).
     metrics : Iterable[str]
         Clustering quality metrics to calculate. Available metrics are
-        "sil" (Silhouette Index), "bic" (Bayesian Information Criterion),
-        "db" (Davies-Bouldin Index), "ch" (Calinski-Harabasz).
+        * "sil" (Silhouette Index)
+        * "bic" (Bayesian Information Criterion)
+        * "db" (Davies-Bouldin Index)
+        * "ch" (Calinski-Harabasz).
     '''
 
     AVAILABLE_METRICS = ('sil', 'bic', 'db', 'ch')
