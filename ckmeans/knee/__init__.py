@@ -47,7 +47,7 @@ def rel_extrema_idcs(
     return numpy.nonzero(cmp_fun(x, left) & cmp_fun(x, right))[0]
 
 
-# the following code is mostly copied from 
+# the following code is mostly copied from
 # https://github.com/arvkevi/kneed and
 # adapted for compatibility
 
@@ -181,7 +181,7 @@ class KneeLocator(object):
     def _normalize(x: numpy.ndarray) -> numpy.ndarray:
         '''_normalize
 
-        Scale vector between 0 and 1.
+        Scale vector values between 0 and 1.
 
         Parameters
         ----------
