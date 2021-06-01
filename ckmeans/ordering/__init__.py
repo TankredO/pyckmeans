@@ -24,6 +24,7 @@ LINKAGE_TYPES = (
     'centroid',
 )
 
+
 def distance_order(
     dist: Union[numpy.ndarray, 'ckmeans.distance.DistanceMatrix'],
     method: str = 'GW',

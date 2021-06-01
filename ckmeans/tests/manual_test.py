@@ -60,20 +60,20 @@ if __name__ == '__main__':
     if tqdm:
         with tqdm.tqdm(total=n_rep) as bar:
             t2 = time.time()
-            cmatrix = ckm_0.predict(x_0, progress_callback=bar.update)
+            ckm_0_res = ckm_0.predict(x_0, progress_callback=bar.update)
             t3 = time.time()
     else:
         t2 = time.time()
-        cmatrix = ckm_0.predict(x_0)
+        ckm_0_res = ckm_0.predict(x_0)
         t3 = time.time()
 
-    print(cmatrix)
+    print(ckm_0_res.cmatrix)
 
     print(t1 - t0)
     print(t3 - t2)
 
     fig, ax = plt.subplots(1,1)
-    ax.imshow(cmatrix)
+    ax.imshow(ckm_0_res.sort().cmatrix)
     fig.savefig(path / 'manual_test_img0.png')
 
     print('sils:', ckm_0.sils)

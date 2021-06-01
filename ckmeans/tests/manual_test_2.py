@@ -73,14 +73,14 @@ if __name__ == '__main__':
     print(t1 - t0)
     print(t3 - t2)
 
-    fig, ax = plt.subplots(1,1)
+    fig, ax = plt.subplots(1, 1)
     ax.imshow(cmatrix)
     fig.savefig(path / 'manual_test_2_img0.png')
 
     print(cmatrix)
 
-    fig, ax = plt.subplots(1,1)
-    ax.scatter(x_0[:,0], x_0[:,1])
+    fig, ax = plt.subplots(1, 1)
+    ax.scatter(x_0[:, 0], x_0[:, 1])
     fig.savefig(path / 'manual_test_2_img1.png')
 
     # print(wecr_0.qualities)

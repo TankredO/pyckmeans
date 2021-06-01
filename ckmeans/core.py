@@ -13,6 +13,9 @@ from sklearn.metrics import (
     davies_bouldin_score,
     calinski_harabasz_score,
 )
+from scipy.cluster import hierarchy
+
+from .ordering import distance_order, condensed_form
 
 # Could get this directly from sklearn.cluster.KMeans.inertia_,
 # but will keep this for flexibility. wss results and inertia_ values
@@ -49,7 +52,11 @@ def wss(
 
     return res
 
-def bic_kmeans(x, centers, cl) -> float:
+def bic_kmeans(
+    x: numpy.ndarray,
+    cl: numpy.ndarray,
+    centers: Optional[numpy.ndarray] = None,
+) -> float:
     '''bic_kmeans
 
     Calculate the Bayesian Information Criterion (BIC) for a KMeans result.
@@ -60,11 +67,12 @@ def bic_kmeans(x, centers, cl) -> float:
     x : numpy.ndarray
         n * m matrix, where n is the number of samples (observations) and m is
         the number of features (predictors).
-    centers : numpy.ndarray
-        k * m matrix of cluster centers (centroids), where k is the number of
-        clusters and m is the number of features (predictors).
     cl : Iterable[int]
-        Iterable of length n, containing cluster membership as coded as integer.
+        Iterable of length n, containing cluster membership coded as integer.
+    centers : Optional[numpy.ndarray]
+        k * m matrix of cluster centers (centroids), where k is the number of
+        clusters and m is the number of features (predictors). If None, centers
+        will be calculated from cl and x.
 
     Returns
     -------
@@ -74,9 +82,127 @@ def bic_kmeans(x, centers, cl) -> float:
     k = len(numpy.unique(cl))
     n = x.shape[0]
 
+    if centers is None:
+        centers = numpy.zeros((k, x.shape[1]))
+        for i, c in enumerate(numpy.unique(cl)):
+            centers[i] = x[cl == c].mean(axis=0)
+
     rss = wss(x, centers, cl)
 
     return n * numpy.log(rss/n) + numpy.log(n) * k
+
+class CKmeansResult:
+    '''CKmeansResult
+
+    Result of CKmeans.predict.
+
+    Has the members
+
+    * cmatrix: n * n consensus matrix
+    * cl: n-length vector of cluster memberships
+
+    Parameters
+    ----------
+    consensus_matrix : numpy.ndarray
+        n * n consensus matrix.
+    cluster_membership : numpy.ndarray
+        n-length vector of cluster memberships
+    '''
+    def __init__(
+        self,
+        consensus_matrix: numpy.ndarray,
+        cluster_membership: numpy.ndarray,
+    ):
+
+        self.cmatrix = consensus_matrix
+        self.cl = cluster_membership
+
+    def order(
+        self,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+    ) -> numpy.ndarray:
+        '''order
+
+        Get optimal sample order according to hierarchical clustering.
+
+        Parameters
+        ----------
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+            Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+            The British Psychological Society 25.
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+
+        Returns
+        -------
+        numpy.ndarray
+            Optimal sample order.
+        '''
+
+        return distance_order(1 - self.cmatrix, method=method, linkage_type=linkage_type)
+
+    def sort(
+        self,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+        in_place: bool = False,
+    ) -> 'CKmeansResult':
+        '''sort
+
+        Sort CKmeansResult using hierarchical clustering.
+
+        Parameters
+        ----------
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+            Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+            The British Psychological Society 25.
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        in_place : bool
+            If False, a new, sorted CKmeansResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        CKmeansResult
+            Sorted CKmeansResult
+        '''
+
+        order = self.order(method=method, linkage_type=linkage_type)
+
+        if in_place:
+            ckmres = self
+        else:
+            ckmres = CKmeansResult(self.cmatrix, self.cl)
+
+        ckmres.cmatrix = ckmres.cmatrix[order, :][:, order]
+        ckmres.cl = ckmres.cl[order]
+
+        return ckmres
+
 
 class InvalidClusteringMetric(Exception):
     '''InvalidClusteringMetric'''
@@ -165,8 +291,9 @@ class CKmeans:
     def predict(
         self,
         x: numpy.ndarray,
+        linkage_type: str = 'average',
         progress_callback: Optional[Callable] = None,
-    ) -> numpy.ndarray:
+    ) -> CKmeansResult:
         '''predict
 
         Predict cluster membership of new data from fitted CKmeans.
@@ -176,13 +303,25 @@ class CKmeans:
         x : numpy.ndarray
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+        linkage_type : str
+            Linkage type of the hierarchical clustering that is used for consensus cluster
+            calculation. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
 
         Returns
         -------
-        numpy.ndarray
-            n * n consensus matrix, where n is the number of samples (observations) in x.
+        CKmeansResult
+            Object comprising a  n * n consensus matrix, and a n-length vector of
+            precited cluster memberships.
         '''
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 
@@ -194,7 +333,15 @@ class CKmeans:
             if progress_callback:
                 progress_callback()
 
-        return cmatrix / self.n_rep
+        cmatrix /= self.n_rep
+
+        linkage = hierarchy.linkage(
+            condensed_form(1 - cmatrix),
+            method=linkage_type,
+        )
+        cl = hierarchy.fcluster(linkage, self.k, criterion='maxclust') - 1
+
+        return CKmeansResult(cmatrix, cl)
 
     def _fit(
         self,
@@ -251,7 +398,7 @@ class CKmeans:
                 if 'sil' in self._metrics:
                     self.sils[i] = silhouette_score(x_subset, cl)
                 if 'bic' in self._metrics:
-                    self.bics[i] = bic_kmeans(x_subset, km.cluster_centers_, cl)
+                    self.bics[i] = bic_kmeans(x_subset, cl, km.cluster_centers_)
                 if 'db' in self._metrics:
                     self.dbs[i] = davies_bouldin_score(x_subset, cl)
                 if 'ch' in self._metrics:

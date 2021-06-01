@@ -42,7 +42,7 @@ class DistanceMatrix:
                     f'but {len(names)} were passed.'
                 raise IncompatibleNamesError(msg)
 
-            self.names = list(names)
+            self.names = numpy.array(names)
 
     def __repr__(self) -> str:
         '''__repr__

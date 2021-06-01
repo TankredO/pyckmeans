@@ -44,5 +44,7 @@ def test_simple_worflow(prep_phylip_files):
     ckm_0 = CKmeans(k=2, n_rep=10)
     ckm_0.fit(pcoares_0.vectors)
     cm_0 = ckm_0.predict(pcoares_0.vectors)
+    cm_0.sort(in_place=True)
 
-    print(cm_0)
+    print('pcoares_0.vectors', pcoares_0.vectors)
+    print('cm_0.cl:', cm_0.cl)
