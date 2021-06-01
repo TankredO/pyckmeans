@@ -107,15 +107,32 @@ class CKmeansResult:
         n * n consensus matrix.
     cluster_membership : numpy.ndarray
         n-length vector of cluster memberships
+    bic: Optional[float]
+        BIC score of the consensus clustering.
+    sil: Optional[float]
+        Silhouette score of the consensus clustering.
+    db: Optional[float]
+        Davies-Bouldin score of the consensus clustering.
+    ch: Optional[float]
+        Calinski-Harabasz score of the consensus clustering.
     '''
     def __init__(
         self,
         consensus_matrix: numpy.ndarray,
         cluster_membership: numpy.ndarray,
+        bic: Optional[float] = None,
+        sil: Optional[float] = None,
+        db: Optional[float] = None,
+        ch: Optional[float] = None,
     ):
 
         self.cmatrix = consensus_matrix
         self.cl = cluster_membership
+
+        self.bic = bic
+        self.sil = sil
+        self.db = db
+        self.ch = ch
 
     def order(
         self,
@@ -335,13 +352,27 @@ class CKmeans:
 
         cmatrix /= self.n_rep
 
+        # prepare output
         linkage = hierarchy.linkage(
             condensed_form(1 - cmatrix),
             method=linkage_type,
         )
+        # fcluster clusters start at one
         cl = hierarchy.fcluster(linkage, self.k, criterion='maxclust') - 1
 
-        return CKmeansResult(cmatrix, cl)
+        bic = bic_kmeans(x, cl)
+        sil = silhouette_score(x, cl)
+        db = davies_bouldin_score(x, cl)
+        ch = calinski_harabasz_score(x, cl)
+
+        return CKmeansResult(
+            cmatrix,
+            cl,
+            bic=bic,
+            sil=sil,
+            db=db,
+            ch=ch,
+        )
 
     def _fit(
         self,
