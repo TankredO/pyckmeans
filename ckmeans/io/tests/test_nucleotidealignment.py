@@ -1,3 +1,4 @@
+import numpy
 import pytest
 
 from ckmeans.io import \
@@ -53,3 +54,32 @@ def test_read_alignment(prep_fasta_files, prep_phylip_files):
         read_alignment(prep_fasta_files[0], 'xyz')
     with pytest.raises(InvalidAlignmentFileExtensionError):
         read_alignment('test.png', 'auto')
+
+def test_utils():
+    na_0 = NucleotideAlignment(
+        ['a', 'b', 'c', 'd', 'e'],
+        numpy.array([
+            ['a', 't', 'a', 't', 't', 'g', 'c'],
+            ['a', 'a', '-', 't', 't', 'g', 'c'],
+            ['a', 'a', '-', 't', 't', 'g', 'c'],
+            ['a', 't', 'a', 't', 'g', 'g', 'c'],
+            ['a', 't', 'a', 't', 'g', 'g', 'c'],
+        ]),
+    )
+    na_0_0 = na_0[:2]
+    assert na_0_0.shape == (2, na_0.shape[1])
+    assert (na_0_0.names == na_0.names[:2]).all()
+    assert (na_0_0.sequences == na_0.sequences[:2]).all()
+
+    na_0_1 = na_0[::2]
+    assert na_0_1.shape == (3, na_0.shape[1])
+    assert (na_0_1.names == na_0.names[::2]).all()
+    assert (na_0_1.sequences == na_0.sequences[::2]).all()
+
+    na_0_2 = na_0[:4, :3]
+    assert na_0_2.shape == (4, 3)
+    assert (na_0_2.names == na_0.names[:4]).all()
+    assert (na_0_2.sequences == na_0.sequences[:4, :3]).all()
+
+    assert na_0.drop_invariant_sites().shape == (5, 3)
+    

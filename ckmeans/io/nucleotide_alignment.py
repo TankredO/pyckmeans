@@ -4,7 +4,7 @@
 '''
 
 import os
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple
 
 import numpy
 
@@ -19,22 +19,22 @@ import numpy
 # 0b00000010 -> unknown base
 BASE_ENCODING = {
     # bases
-    'A': 0b10001000,
-    'G': 0b01001000,
-    'C': 0b00101000,
-    'T': 0b00011000,
+    'A': 0b10001000, 'a': 0b10001000,
+    'G': 0b01001000, 'g': 0b01001000,
+    'C': 0b00101000, 't': 0b00101000,
+    'T': 0b00011000, 'c': 0b00011000,
     # wobbles
-    'R': 0b11000000, # A|G
-    'M': 0b10100000, # A|C
-    'W': 0b10010000, # A|T
-    'S': 0b01100000, # G|C
-    'K': 0b01010000, # G|T
-    'Y': 0b00110000, # C|T
-    'V': 0b11100000, # A|G|C
-    'H': 0b10110000, # A|C|T
-    'D': 0b11010000, # A|G|T
-    'B': 0b01110000, # G|C|T
-    'N': 0b11110000, # A|G|C|T
+    'R': 0b11000000, 'r': 0b11000000, # A|G
+    'M': 0b10100000, 'm': 0b10100000, # A|C
+    'W': 0b10010000, 'w': 0b10010000, # A|T
+    'S': 0b01100000, 's': 0b01100000, # G|C
+    'K': 0b01010000, 'k': 0b01010000, # G|T
+    'Y': 0b00110000, 'y': 0b00110000, # C|T
+    'V': 0b11100000, 'v': 0b11100000, # A|G|C
+    'H': 0b10110000, 'h': 0b10110000, # A|C|T
+    'D': 0b11010000, 'd': 0b11010000, # A|G|T
+    'B': 0b01110000, 'b': 0b01110000, # G|C|T
+    'N': 0b11110000, 'n': 0b11110000, # A|G|C|T
     # gaps
     '-': 0b00000100,
     '~': 0b00000100,
@@ -61,7 +61,7 @@ class InvalidSeqIORecordsError(Exception):
 class NucleotideAlignment:
     '''NucleotideAlignment
 
-    Class for representing nucleotide alignments
+    Class for nucleotide alignments.
 
     Parameters
     ----------
@@ -72,15 +72,14 @@ class NucleotideAlignment:
         is the number of sites.
     '''
 
-    def __init__(self, names: List[str], sequences: numpy.ndarray):
-        self.names = names
-
+    def __init__(self, names: Iterable[str], sequences: numpy.ndarray):
         # check validity
         n_names = len(names)
         n_seqs = sequences.shape[0]
         if n_names != n_seqs:
             msg = f'Number of names ({n_names}) does not match number of sequences ({n_seqs}).'
             raise Exception(msg)
+        self.names = numpy.array(names)
 
         # encode strings as uint8, see BASE_ENCODING
         if sequences.dtype != numpy.uint8:
@@ -95,6 +94,46 @@ class NucleotideAlignment:
         else:
             self.sequences = sequences
 
+    def drop_invariant_sites(self, in_place: bool = False) -> 'NucleotideAlignment':
+        '''drop_invariant_sites
+
+        Remove invariant sites from alignment. Invariant sites
+        are sites, where each entry has the same symbol.
+
+        Parameters
+        ----------
+        in_place : bool, optional
+            Modify self in place, by default False
+
+        Returns
+        -------
+        NucleotideAlignment
+            NucleotideAlignment without invariant sites.
+            If in_place is set to True, self is returned.
+        '''
+        if in_place:
+            self.sequences = self.sequences[
+                :,
+                ~numpy.all((self.sequences == self.sequences[0,]), axis=0)
+            ]
+            return self
+        else:
+            return NucleotideAlignment(
+                self.names,
+                self.sequences[:, ~numpy.all((self.sequences == self.sequences[0,]), axis=0)],
+            )
+
+    def copy(self) -> 'NucleotideAlignment':
+        '''copy
+
+        Return a copy of the NucleotideAligment object.
+
+        Returns
+        -------
+        NucleotideAlignment
+            Copy of self.
+        '''
+        return NucleotideAlignment(self.names.copy(), self.sequences.copy())
 
     @property
     def shape(self) -> Tuple[int, int]:
@@ -108,6 +147,12 @@ class NucleotideAlignment:
             Number of samples n, number of sites m
         '''
         return self.sequences.shape
+
+    def __getitem__(self, idx):
+        if isinstance(idx, tuple):
+            return NucleotideAlignment(self.names[idx[0]], self.sequences[idx])
+        else:
+            return NucleotideAlignment(self.names[idx], self.sequences[idx])
 
     def __repr__(self) -> str:
         '''__repr__
@@ -158,6 +203,7 @@ class NucleotideAlignment:
                 raise InvalidSeqIORecordsError(msg)
 
         seqs = numpy.array(seqs)
+        names = numpy.array(names)
 
         return cls(names, seqs)
 

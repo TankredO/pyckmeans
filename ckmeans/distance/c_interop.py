@@ -48,6 +48,9 @@ def p_distance(
     numpy.ndarray
         n*n distance matrix.
     '''
+    if not alignment.flags['C_CONTIGUOUS']:
+        alignment = numpy.ascontiguousarray(alignment)
+
     n, m = alignment.shape
 
     dist_mat = numpy.zeros((n, n), dtype=numpy.double)
@@ -97,6 +100,9 @@ def jc_distance(
     numpy.ndarray
         n*n distance matrix.
     '''
+    if not alignment.flags['C_CONTIGUOUS']:
+        alignment = numpy.ascontiguousarray(alignment)
+
     n, m = alignment.shape
 
     dist_mat = numpy.zeros((n, n), dtype=numpy.double)
@@ -146,6 +152,9 @@ def k2p_distance(
     numpy.ndarray
         n*n distance matrix.
     '''
+    if not alignment.flags['C_CONTIGUOUS']:
+        alignment = numpy.ascontiguousarray(alignment)
+
     n, m = alignment.shape
 
     dist_mat = numpy.zeros((n, n), dtype=numpy.double)

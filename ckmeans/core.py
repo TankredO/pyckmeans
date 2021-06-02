@@ -96,8 +96,7 @@ class CKmeansResult:
 
     Result of CKmeans.predict.
 
-    Has the members
-
+    Contains the members
     * cmatrix: n * n consensus matrix
     * cl: n-length vector of cluster memberships
 
@@ -125,7 +124,6 @@ class CKmeansResult:
         db: Optional[float] = None,
         ch: Optional[float] = None,
     ):
-
         self.cmatrix = consensus_matrix
         self.cl = cluster_membership
 
@@ -141,7 +139,7 @@ class CKmeansResult:
     ) -> numpy.ndarray:
         '''order
 
-        Get optimal sample order according to hierarchical clustering.
+        Get optimal order according to hierarchical clustering.
 
         Parameters
         ----------
@@ -352,7 +350,7 @@ class CKmeans:
 
         cmatrix /= self.n_rep
 
-        # prepare output
+        # = prepare output
         linkage = hierarchy.linkage(
             condensed_form(1 - cmatrix),
             method=linkage_type,
@@ -450,6 +448,7 @@ class CKmeans:
         self.bics = None
         self.dbs = None
 
+# EXPERIMENTAL
 class WECR:
     def __init__(
         self,

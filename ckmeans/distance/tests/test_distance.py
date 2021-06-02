@@ -39,7 +39,7 @@ def test_p_distance(prepare_alignments):
     d_0_p = p_distance(prepare_alignments[0][0].sequences)
     assert np.all(np.abs(d_0_p - d_0_expected) < eps)
 
-def test_distances_simples(prepare_alignments):
+def test_distances_simple(prepare_alignments):
     alignment_distance(prepare_alignments[0][0], 'p', True)
     alignment_distance(prepare_alignments[0][0], 'p', False)
     alignment_distance(prepare_alignments[0][0], 'jc', True)
