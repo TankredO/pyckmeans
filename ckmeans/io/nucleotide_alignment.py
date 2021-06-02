@@ -119,8 +119,8 @@ class NucleotideAlignment:
             return self
         else:
             return NucleotideAlignment(
-                self.names,
-                self.sequences[:, ~numpy.all((self.sequences == self.sequences[0,]), axis=0)],
+                self.names.copy(),
+                self.sequences[:, ~numpy.all((self.sequences == self.sequences[0,]), axis=0)].copy(),
             )
 
     def copy(self) -> 'NucleotideAlignment':
