@@ -83,7 +83,7 @@ class PCOAResult:
                     f'but {len(names)} were passed.'
                 raise IncompatibleNamesError(msg)
 
-            self.names = list(names)
+            self.names = numpy.array(names)
 
     def __repr__(self) -> str:
         str_repr = f'<PCOAResult; neg. eigvals: {self.negative_eigvals}, ' +\
@@ -231,7 +231,7 @@ def pcoa(
                 negative_eigvals=True,
                 correction=None,
                 eigvals_corr_rel=eigvals_rel_corrected,
-                names = names,
+                names=names,
             )
 
         # negative eigenvalues, correction
