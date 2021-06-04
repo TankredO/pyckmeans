@@ -3,7 +3,7 @@
     Module for ckmeans core functionality.
 '''
 
-from typing import Callable, Iterable, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import numpy
 from sklearn.cluster import KMeans
@@ -247,6 +247,8 @@ class CKmeans:
         * "bic" (Bayesian Information Criterion)
         * "db" (Davies-Bouldin Index)
         * "ch" (Calinski-Harabasz).
+    kwargs : Dict[str, Any]
+        Additional keyword arguments passed to sklearn.cluster.KMeans.
     '''
 
     AVAILABLE_METRICS = ('sil', 'bic', 'db', 'ch')
@@ -258,6 +260,7 @@ class CKmeans:
         p_samp: float = 0.8,
         p_feat: float = 0.8,
         metrics: Iterable[str] = ('sil', 'bic'),
+        **kwargs: Dict[str, Any],
     ):
         self.k = k
         self.n_rep = n_rep
@@ -279,6 +282,12 @@ class CKmeans:
         self.bics = None
         self.dbs = None
         self.chs = None
+
+        # KMeans options
+        self._kmeans_kwargs = {
+            'n_init': 2,
+        }
+        self._kmeans_kwargs.update(kwargs)
 
     def fit(
         self,
@@ -416,7 +425,7 @@ class CKmeans:
 
             x_subset = x[samp_idcs][:, feat_idcs]
 
-            km = KMeans(self.k)
+            km = KMeans(self.k, **self._kmeans_kwargs)
             km.fit(x_subset)
             self.kmeans.append(km)
             self.centers[i] = km.cluster_centers_

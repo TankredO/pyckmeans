@@ -42,7 +42,8 @@ if __name__ == '__main__':
             'bic',
             'db',
             'ch',
-        ]
+        ],
+        n_init=5,
     )
 
     print('fitting ...')
