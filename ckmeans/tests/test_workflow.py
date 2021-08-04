@@ -1,3 +1,4 @@
+import ckmeans
 from numpy.core.numeric import allclose
 import pytest
 import tempfile
@@ -6,7 +7,7 @@ import os
 from ckmeans.io import read_alignment
 from ckmeans.distance import alignment_distance
 from ckmeans.pcoa import pcoa
-from ckmeans.core import CKmeans
+from ckmeans.core import CKmeans, MultiCKMeans
 from ckmeans.plotting import plot_ckmeans_result
 
 PHYLIP_STR_0 = \
@@ -67,6 +68,12 @@ def test_simple_workflow(prep_phylip_files):
 
     print('ckm_1_res.cl:', ckm_1_res.cl)
     print('ckm_1_res.names:', ckm_1_res.names)
+
+def test_multi_workflow(prep_pcoa_results):
+    pcoares_0 = prep_pcoa_results[0]
+    mckm_0 = MultiCKMeans([2,3,4,5])
+    mckm_0.fit(pcoares_0)
+    mckm_0_res = mckm_0.predict(pcoares_0)
 
 def test_plotting(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]

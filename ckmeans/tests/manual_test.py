@@ -78,12 +78,13 @@ if __name__ == '__main__':
     # ax.imshow(ckm_0_res.sort().cmatrix)
     # fig.savefig(path / 'manual_test_img0.png')
 
-    fig = ckmeans.plotting.plot_ckmeans_result(ckm_0_res)
+    fig = ckmeans.plotting.plot_ckmeans_result(ckm_0_res, figsize=(10, 10))
     fig.savefig(path / 'manual_test_img0.png')
 
     fig = ckmeans.plotting.plot_ckmeans_result(
         ckm_0_res,
-        names=np.arange(x_0.shape[0]).astype('str')
+        names=np.arange(x_0.shape[0]).astype('str'),
+        figsize=(10, 10),
     )
     fig.savefig(path / 'manual_test_img1.png')
 
@@ -91,3 +92,20 @@ if __name__ == '__main__':
     print('bics:', ckm_0.bics)
     print('dbs:', ckm_0.dbs)
     print('chs:', ckm_0.chs)
+
+    ks = [2,3,4,5,6,7,8,9,10]
+    n_rep = 100
+    mckm_0 = ckmeans.MultiCKMeans(k=ks, n_rep=n_rep)
+    print('fitting multi ...')
+    if tqdm:
+        with tqdm.tqdm(total=n_rep * len(ks)) as bar:
+            mckm_0.fit(x_0, bar.update)
+
+    print('predicting multi ...')
+    if tqdm:
+        with tqdm.tqdm(total=n_rep * len(ks)) as bar:
+            mckm_0_res = mckm_0.predict(x_0, progress_callback=bar.update)
+
+    for k, ckm_res in zip(ks, mckm_0_res.ckmeans_results):
+        fig = ckmeans.plotting.plot_ckmeans_result(ckm_res, figsize=(10, 10))
+        fig.savefig(path / f'manual_test_img_k-{k}.png')

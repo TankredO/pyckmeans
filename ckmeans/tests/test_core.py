@@ -7,3 +7,5 @@ def test_simple():
     ckm_1 = ckmeans.CKmeans(np.array(3, dtype=int))
     ckm_2 = ckmeans.CKmeans(np.array(3, dtype=np.int64))
 
+def test_multi():
+    mckm_0 = ckmeans.MultiCKMeans(np.arange(10))
