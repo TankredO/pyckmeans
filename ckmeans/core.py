@@ -15,6 +15,7 @@ from sklearn.metrics import (
 )
 from scipy.cluster import hierarchy
 
+from .pcoa import PCOAResult
 from .ordering import distance_order, condensed_form
 
 # Could get this directly from sklearn.cluster.KMeans.inertia_,
@@ -114,6 +115,8 @@ class CKmeansResult:
         Davies-Bouldin score of the consensus clustering.
     ch: Optional[float]
         Calinski-Harabasz score of the consensus clustering.
+    names: Optional[Iterable(str)]
+        Samples names.
     '''
     def __init__(
         self,
@@ -123,6 +126,7 @@ class CKmeansResult:
         sil: Optional[float] = None,
         db: Optional[float] = None,
         ch: Optional[float] = None,
+        names: Optional[Iterable[str]] = None,
     ):
         self.cmatrix = consensus_matrix
         self.cl = cluster_membership
@@ -131,6 +135,8 @@ class CKmeansResult:
         self.sil = sil
         self.db = db
         self.ch = ch
+
+        self.names = None if names is None else numpy.array(names)
 
     def order(
         self,
@@ -211,10 +217,19 @@ class CKmeansResult:
         if in_place:
             ckmres = self
         else:
-            ckmres = CKmeansResult(self.cmatrix, self.cl)
+            ckmres = CKmeansResult(
+                consensus_matrix=self.cmatrix.copy(),
+                cluster_membership=self.cl.copy(),
+                bic=self.bic,
+                sil=self.sil,
+                db=self.db,
+                ch=self.ch,
+                names=None if self.names is None else self.names.copy(),
+            )
 
         ckmres.cmatrix = ckmres.cmatrix[order, :][:, order]
         ckmres.cl = ckmres.cl[order]
+        ckmres.names = None if ckmres.names is None else ckmres.names[order]
 
         return ckmres
 
@@ -242,7 +257,7 @@ class CKmeans:
         The resulting number of features will be rounded up. I.e. if number of features is 10 and
         p_feat is 0.72, each K-Means will use 8 randomly drawn features (0.72 * 10 = 7.5, 7.2 -> 8).
     metrics : Iterable[str]
-        Clustering quality metrics to calculate. Available metrics are
+        Clustering quality metrics to calculate while training. Available metrics are
         * "sil" (Silhouette Index)
         * "bic" (Bayesian Information Criterion)
         * "db" (Davies-Bouldin Index)
@@ -291,7 +306,7 @@ class CKmeans:
 
     def fit(
         self,
-        x: numpy.ndarray,
+        x: Union[numpy.ndarray, PCOAResult],
         progress_callback: Optional[Callable] = None,
     ):
         '''fit
@@ -303,18 +318,22 @@ class CKmeans:
         x : numpy.ndarray
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+            Alternatively a ckmeans.pcoa.PCOAResult as returned from ckmeans.pcoa.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
         '''
 
+        if isinstance(x, PCOAResult):
+            x = x.vectors
+
         # _fit is called here to be able to extend later on.
-        # the plan is to add a parallel fitting function later on
+        # The plan is to add a parallel fitting function later on
         # e.g. _fit_parallel(x, progress_callback, n_cores)
         self._fit(x, progress_callback=progress_callback)
 
     def predict(
         self,
-        x: numpy.ndarray,
+        x: Union[numpy.ndarray, PCOAResult],
         linkage_type: str = 'average',
         progress_callback: Optional[Callable] = None,
     ) -> CKmeansResult:
@@ -324,9 +343,10 @@ class CKmeans:
 
         Parameters
         ----------
-        x : numpy.ndarray
+        x : Union[numpy.ndarray, PCOAResult]
             n * m matrix, where n is the number of samples (observations) and m is
             the number of features (predictors).
+            Alternatively a ckmeans.pcoa.PCOAResult as returned from ckmeans.pcoa.
         linkage_type : str
             Linkage type of the hierarchical clustering that is used for consensus cluster
             calculation. One of
@@ -347,6 +367,11 @@ class CKmeans:
             Object comprising a  n * n consensus matrix, and a n-length vector of
             precited cluster memberships.
         '''
+        names = None
+        if isinstance(x, PCOAResult):
+            names = x.names
+            x = x.vectors
+
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 
         for i, km in enumerate(self.kmeans):
@@ -379,6 +404,7 @@ class CKmeans:
             sil=sil,
             db=db,
             ch=ch,
+            names=names,
         )
 
     def _fit(
@@ -456,6 +482,7 @@ class CKmeans:
         self.sils = None
         self.bics = None
         self.dbs = None
+        self.chs = None
 
 # EXPERIMENTAL
 class WECR:

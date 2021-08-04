@@ -10,6 +10,7 @@ except:
     tqdm = None
 
 import ckmeans
+import ckmeans.plotting
 
 if __name__ == '__main__':
 
@@ -73,9 +74,18 @@ if __name__ == '__main__':
     print(t1 - t0)
     print(t3 - t2)
 
-    fig, ax = plt.subplots(1,1)
-    ax.imshow(ckm_0_res.sort().cmatrix)
+    # fig, ax = plt.subplots(1,1)
+    # ax.imshow(ckm_0_res.sort().cmatrix)
+    # fig.savefig(path / 'manual_test_img0.png')
+
+    fig = ckmeans.plotting.plot_ckmeans_result(ckm_0_res)
     fig.savefig(path / 'manual_test_img0.png')
+
+    fig = ckmeans.plotting.plot_ckmeans_result(
+        ckm_0_res,
+        names=np.arange(x_0.shape[0]).astype('str')
+    )
+    fig.savefig(path / 'manual_test_img1.png')
 
     print('sils:', ckm_0.sils)
     print('bics:', ckm_0.bics)

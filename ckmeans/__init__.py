@@ -4,3 +4,4 @@
 '''
 
 from .core import CKmeans, WECR
+from .pcoa import pcoa
