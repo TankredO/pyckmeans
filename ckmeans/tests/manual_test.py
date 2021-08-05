@@ -11,6 +11,7 @@ except:
 
 import ckmeans
 import ckmeans.plotting
+import ckmeans.utils
 
 if __name__ == '__main__':
     path = pathlib.Path(__file__).parent.absolute()
@@ -104,18 +105,23 @@ if __name__ == '__main__':
     n_rep = 100
     mckm_0 = ckmeans.MultiCKMeans(k=ks, n_rep=n_rep)
     print('fitting multi ...')
-    if tqdm:
-        with tqdm.tqdm(total=n_rep * len(ks)) as bar:
-            mckm_0.fit(x_0, bar.update)
-    else:
-        mckm_0.fit(x_0)
+    # if tqdm:
+    #     with tqdm.tqdm(total=n_rep * len(ks)) as bar:
+    #         mckm_0.fit(x_0, bar.update)
+    # else:
+    #     mckm_0.fit(x_0)
+    with ckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
+        mckm_0.fit(x_0, pb.update)
 
     print('predicting multi ...')
-    if tqdm:
-        with tqdm.tqdm(total=n_rep * len(ks)) as bar:
-            mckm_0_res = mckm_0.predict(x_0, progress_callback=bar.update)
-    else:
-        mckm_0_res = mckm_0.predict(x_0)
+    # if tqdm:
+    #     with tqdm.tqdm(total=n_rep * len(ks)) as bar:
+    #         mckm_0_res = mckm_0.predict(x_0, progress_callback=bar.update)
+    # else:
+    #     mckm_0_res = mckm_0.predict(x_0)
+
+    with ckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
+        mckm_0_res = mckm_0.predict(x_0, progress_callback=pb.update)
 
     print('sils:', mckm_0_res.sils)
     print('bics:', mckm_0_res.bics)

@@ -132,17 +132,22 @@ def plot_multickmeans_metrics(
     for ax in axs:
         ax.grid(axis='x')
         ax.set_xticks(mckm_res.ks)
+        ax.set_xlabel('k')
 
     axs[0].plot(mckm_res.ks, mckm_res.bics)
     axs[0].set_title('BIC')
+    axs[0].set_ylabel('BIC')
 
     axs[1].plot(mckm_res.ks, mckm_res.dbs)
     axs[1].set_title('DB')
+    axs[1].set_ylabel('DB')
 
     axs[2].plot(mckm_res.ks, mckm_res.sils)
     axs[2].set_title('SIL')
+    axs[2].set_ylabel('SIL')
 
     axs[3].plot(mckm_res.ks, mckm_res.chs)
     axs[3].set_title('CH')
+    axs[3].set_ylabel('CH')
 
     return fig
