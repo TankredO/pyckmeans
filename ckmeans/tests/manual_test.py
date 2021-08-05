@@ -13,7 +13,6 @@ import ckmeans
 import ckmeans.plotting
 
 if __name__ == '__main__':
-
     path = pathlib.Path(__file__).parent.absolute()
 
     p = 10
@@ -21,13 +20,13 @@ if __name__ == '__main__':
     n0 = 50
     x0 = np.random.normal(0, 2, (n0, p))
     n1 = 50
-    x1 = np.random.normal(-3, 1.5, (n1, p))
+    x1 = np.random.normal(-5, 1.5, (n1, p))
     n2 = 50
-    x2 = np.random.normal(3, 2, (n2, p))
+    x2 = np.random.normal(5, 2, (n2, p))
 
     x_0 = np.r_[x0, x1, x2]
 
-    k = 10
+    k = 3
     n_rep = 100
     p_feat = 0.5
     p_samp = 0.5
@@ -88,6 +87,14 @@ if __name__ == '__main__':
     )
     fig.savefig(path / 'manual_test_img1.png')
 
+    fig = ckmeans.plotting.plot_ckmeans_result(
+        ckm_0_res,
+        names=np.arange(x_0.shape[0]).astype('str'),
+        figsize=(10, 10),
+        order=None,
+    )
+    fig.savefig(path / 'manual_test_img2.png')
+
     print('sils:', ckm_0.sils)
     print('bics:', ckm_0.bics)
     print('dbs:', ckm_0.dbs)
@@ -100,11 +107,23 @@ if __name__ == '__main__':
     if tqdm:
         with tqdm.tqdm(total=n_rep * len(ks)) as bar:
             mckm_0.fit(x_0, bar.update)
+    else:
+        mckm_0.fit(x_0)
 
     print('predicting multi ...')
     if tqdm:
         with tqdm.tqdm(total=n_rep * len(ks)) as bar:
             mckm_0_res = mckm_0.predict(x_0, progress_callback=bar.update)
+    else:
+        mckm_0_res = mckm_0.predict(x_0)
+
+    print('sils:', mckm_0_res.sils)
+    print('bics:', mckm_0_res.bics)
+    print('dbs:', mckm_0_res.dbs)
+    print('chs:', mckm_0_res.chs)
+
+    fig = ckmeans.plotting.plot_multickmeans_metrics(mckm_0_res, figsize=(10, 10))
+    fig.savefig(path / f'manual_test_img_metrics0.png')
 
     for k, ckm_res in zip(ks, mckm_0_res.ckmeans_results):
         fig = ckmeans.plotting.plot_ckmeans_result(ckm_res, figsize=(10, 10))

@@ -107,6 +107,8 @@ class CKmeansResult:
         n * n consensus matrix.
     cluster_membership : numpy.ndarray
         n-length vector of cluster memberships
+    k : float
+        number of clusters
     bic: Optional[float]
         BIC score of the consensus clustering.
     sil: Optional[float]
@@ -122,6 +124,7 @@ class CKmeansResult:
         self,
         consensus_matrix: numpy.ndarray,
         cluster_membership: numpy.ndarray,
+        k: float,
         bic: Optional[float] = None,
         sil: Optional[float] = None,
         db: Optional[float] = None,
@@ -130,6 +133,7 @@ class CKmeansResult:
     ):
         self.cmatrix = consensus_matrix
         self.cl = cluster_membership
+        self.k = k
 
         self.bic = bic
         self.sil = sil
@@ -214,12 +218,38 @@ class CKmeansResult:
 
         order = self.order(method=method, linkage_type=linkage_type)
 
+        return self.reorder(order, in_place=in_place)
+
+    def reorder(
+        self,
+        order: numpy.ndarray,
+        in_place: bool = False,
+    ) -> 'CKmeansResult':
+        '''reorder
+
+        Reorder samples according to provided order.
+
+        Parameters
+        ----------
+        order : numpy.ndarray
+            New sample order.
+        in_place : bool
+            If False, a new, sorted CKmeansResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        CKmeansResult
+            Reordered CKmeansResult
+        '''
+
         if in_place:
             ckmres = self
         else:
             ckmres = CKmeansResult(
                 consensus_matrix=self.cmatrix.copy(),
                 cluster_membership=self.cl.copy(),
+                k=self.k,
                 bic=self.bic,
                 sil=self.sil,
                 db=self.db,
@@ -400,6 +430,7 @@ class CKmeans:
         return CKmeansResult(
             cmatrix,
             cl,
+            k=self.k,
             bic=bic,
             sil=sil,
             db=db,
@@ -503,7 +534,137 @@ class MultiCKmeansResult:
         names: Optional[Iterable[str]] = None,
     ):
         self.ckmeans_results = ckmeans_results
-        self.names = None if names is None else numpy.array(names)
+        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+
+        self.ks = [ckm_res.k for ckm_res in ckmeans_results]
+
+        self.sils = [ckm_res.sil for ckm_res in ckmeans_results]
+        self.bics = [ckm_res.bic for ckm_res in ckmeans_results]
+        self.dbs = [ckm_res.db for ckm_res in ckmeans_results]
+        self.chs = [ckm_res.ch for ckm_res in ckmeans_results]
+
+    def order(
+        self,
+        by: int,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+    ) -> numpy.ndarray:
+        '''order
+
+        Get optimal sample order according to hierarchical clustering of the
+        CKmeansResult at index "by".
+
+        Parameters
+        ----------
+        by : int
+            Index of the CKMeansResult to order by.
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+            Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+            The British Psychological Society 25.
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+
+        Returns
+        -------
+        numpy.ndarray
+            Optimal sample order.
+        '''
+        ckm_res = self.ckmeans_results[by]
+
+        return distance_order(1 - ckm_res.cmatrix, method=method, linkage_type=linkage_type)
+
+    def sort(
+        self,
+        by: int,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+        in_place: bool = False,
+    ) -> 'MultiCKmeansResult':
+        '''sort
+
+        Sort samples according to hierarchical clustering of the
+        CKmeansResult at index "by".
+
+        Parameters
+        ----------
+        by : int
+            Index of the CKMeansResult to sort by.
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+            Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+            The British Psychological Society 25.
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        in_place : bool
+            If False, a new, sorted MultiCKmeansResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        MultiCKmeansResult
+            Sorted MultiCKmeansResult
+        '''
+
+        order = self.order(by=by, method=method, linkage_type=linkage_type)
+
+        return self.reorder(order, in_place=in_place)
+
+    def reorder(
+        self,
+        order: numpy.ndarray,
+        in_place: bool = False,
+    ) -> 'MultiCKmeansResult':
+        '''reorder
+
+        Reorder samples in all CKmeansResults according to provided order.
+
+        Parameters
+        ----------
+        order : numpy.ndarray
+            New sample order.
+        in_place : bool
+            If False, a new, sorted MultiCKmeansResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        CKmeansResult
+            Reordered CKmeansResult
+        '''
+
+        if in_place:
+            mckmres = self
+            for ckmres in self.ckmeans_results:
+                ckmres.reorder(order, in_place=True)
+        else:
+            ckm_results = [
+                ckmres.reorder(order, in_place=False) for ckmres in self.ckmeans_results
+            ]
+            names = None if self.names is None else self.names.copy()
+            mckmres = MultiCKmeansResult(ckm_results, names=names)
+
+        return mckmres
 
 class MultiCKMeans:
     '''MultiCKMeans
@@ -624,7 +785,6 @@ class MultiCKMeans:
         names = None
         if isinstance(x, PCOAResult):
             names = x.names
-            x = x.vectors
 
         ckmeans_results: List[CKmeansResult] = []
         for ckm in self.ckmeans:

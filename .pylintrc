@@ -461,7 +461,8 @@ good-names=i,
            l,
            r,
            db,
-           ch
+           ch,
+           by
 
 
 # Good variable names regexes, separated by a comma. If names match any regex,

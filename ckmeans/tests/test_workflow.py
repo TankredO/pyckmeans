@@ -8,7 +8,7 @@ from ckmeans.io import read_alignment
 from ckmeans.distance import alignment_distance
 from ckmeans.pcoa import pcoa
 from ckmeans.core import CKmeans, MultiCKMeans
-from ckmeans.plotting import plot_ckmeans_result
+from ckmeans.plotting import plot_ckmeans_result, plot_multickmeans_metrics
 
 PHYLIP_STR_0 = \
 '''10 9
@@ -71,9 +71,11 @@ def test_simple_workflow(prep_phylip_files):
 
 def test_multi_workflow(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]
-    mckm_0 = MultiCKMeans([2,3,4,5])
+    mckm_0 = MultiCKMeans([2,3,3])
     mckm_0.fit(pcoares_0)
     mckm_0_res = mckm_0.predict(pcoares_0)
+
+    plot_multickmeans_metrics(mckm_0_res)
 
 def test_plotting(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]
@@ -81,4 +83,10 @@ def test_plotting(prep_pcoa_results):
     ckm_0.fit(pcoares_0)
     ckm_0_res = ckm_0.predict(pcoares_0)
 
+    ckm_0_res.sort()
+    ord = ckm_0_res.order()
+    ckm_0_res.reorder(ord)
+
     plot_ckmeans_result(ckm_0_res)
+    plot_ckmeans_result(ckm_0_res, order=None)
+    plot_ckmeans_result(ckm_0_res, order=ord)

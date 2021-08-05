@@ -3,14 +3,16 @@
 
 from typing import Iterable, Optional, Tuple, Union
 import numpy
-import matplotlib.figure
 import matplotlib.pyplot as plt
+import matplotlib.figure
 import matplotlib.colors
-from ckmeans.core import CKmeansResult
+import matplotlib.axes
+from ckmeans.core import CKmeansResult, MultiCKmeansResult
 
 def plot_ckmeans_result(
     ckm_res: 'CKmeansResult',
     names: Optional[Iterable[str]] = None,
+    order: Optional[Union[str, numpy.ndarray]] = 'GW',
     cmap_cm: Union[str, matplotlib.colors.Colormap] = 'Blues',
     cmap_clbar: Union[str, matplotlib.colors.Colormap] = 'tab20',
     figsize: Tuple[float, float] = (7, 7),
@@ -25,6 +27,10 @@ def plot_ckmeans_result(
         CKmeansResult as returned from CKmeans.predict.
     names : Optional[Iterable[str]]
         Sample names to be plotted.
+    order : Optional[Union[str, numpy.ndarray]]
+        Sample Plotting order. Either a string, determining the oder method to use
+        (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
+        or None to apply no reordering.
     cmap_cm : Union[str, matplotlib.colors.Colormap], optional
         Colormap for the consensus matrix, by default 'Blues'
     cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
@@ -37,8 +43,15 @@ def plot_ckmeans_result(
     matplotlib.figure.Figure
         Matplotlib figure.
     '''
-    order = ckm_res.order() # need to store order for name ordering
-    ckm_res = ckm_res.sort(in_place=False)
+    # if order is None do not reorder
+    if order is None:
+        order = numpy.arange(ckm_res.cmatrix.shape[0])
+    # if order is str use CKMeansResult order
+    elif isinstance(order, str):
+        order = ckm_res.order(method=order)
+    # else order must be numpy.ndarray giving the sample order
+
+    ckm_res = ckm_res.reorder(order=order, in_place=False)
     cl = ckm_res.cl
 
     # if names is passed use names, else try to get names
@@ -89,5 +102,47 @@ def plot_ckmeans_result(
     ax_cbar.set_xticks([])
     ax_cbar.yaxis.tick_right()
     plt.colorbar(plt.cm.ScalarMappable(cmap=cmap_cm), cax=ax_cbar)
+
+    return fig
+
+def plot_multickmeans_metrics(
+    mckm_res: 'MultiCKmeansResult',
+    figsize: Tuple[float, float] = (7, 7),
+) -> matplotlib.figure.Figure:
+    '''plot_multickmeans_metrics
+
+    Plot MultiCKMeansResult metrics.
+
+    Parameters
+    ----------
+    mckm_res : MultiCKmeansResult
+        MultiCKmeansResult object
+    figsize : Tuple[float, float], optional
+        Figure size for the matplotlib figure, by default (7, 7).
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Matplotlib Figure of the metrics plot.
+    '''
+
+    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=figsize)
+
+    axs = axs.flatten()
+    for ax in axs:
+        ax.grid(axis='x')
+        ax.set_xticks(mckm_res.ks)
+
+    axs[0].plot(mckm_res.ks, mckm_res.bics)
+    axs[0].set_title('BIC')
+
+    axs[1].plot(mckm_res.ks, mckm_res.dbs)
+    axs[1].set_title('DB')
+
+    axs[2].plot(mckm_res.ks, mckm_res.sils)
+    axs[2].set_title('SIL')
+
+    axs[3].plot(mckm_res.ks, mckm_res.chs)
+    axs[3].set_title('CH')
 
     return fig
