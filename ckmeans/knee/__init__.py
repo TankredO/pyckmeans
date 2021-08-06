@@ -49,7 +49,7 @@ def rel_extrema_idcs(
 
 # the following code is mostly copied from
 # https://github.com/arvkevi/kneed and
-# adapted for compatibility
+# was adapted for compatibility
 
 VALID_CURVE = ('convex', 'concave')
 VALID_DIRECTION = ('increasing', 'decreasing')

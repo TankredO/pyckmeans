@@ -10,7 +10,6 @@ except:
     tqdm = None
 
 import ckmeans
-import ckmeans.plotting
 import ckmeans.utils
 
 if __name__ == '__main__':
@@ -78,17 +77,17 @@ if __name__ == '__main__':
     # ax.imshow(ckm_0_res.sort().cmatrix)
     # fig.savefig(path / 'manual_test_img0.png')
 
-    fig = ckmeans.plotting.plot_ckmeans_result(ckm_0_res, figsize=(10, 10))
+    fig = ckmeans.plot_ckmeans_result(ckm_0_res, figsize=(10, 10))
     fig.savefig(path / 'manual_test_img0.png')
 
-    fig = ckmeans.plotting.plot_ckmeans_result(
+    fig = ckmeans.plot_ckmeans_result(
         ckm_0_res,
         names=np.arange(x_0.shape[0]).astype('str'),
         figsize=(10, 10),
     )
     fig.savefig(path / 'manual_test_img1.png')
 
-    fig = ckmeans.plotting.plot_ckmeans_result(
+    fig = ckmeans.plot_ckmeans_result(
         ckm_0_res,
         names=np.arange(x_0.shape[0]).astype('str'),
         figsize=(10, 10),
@@ -104,22 +103,12 @@ if __name__ == '__main__':
     ks = [2,3,4,5,6,7,8,9,10]
     n_rep = 100
     mckm_0 = ckmeans.MultiCKMeans(k=ks, n_rep=n_rep)
+
     print('fitting multi ...')
-    # if tqdm:
-    #     with tqdm.tqdm(total=n_rep * len(ks)) as bar:
-    #         mckm_0.fit(x_0, bar.update)
-    # else:
-    #     mckm_0.fit(x_0)
     with ckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
         mckm_0.fit(x_0, pb.update)
 
     print('predicting multi ...')
-    # if tqdm:
-    #     with tqdm.tqdm(total=n_rep * len(ks)) as bar:
-    #         mckm_0_res = mckm_0.predict(x_0, progress_callback=bar.update)
-    # else:
-    #     mckm_0_res = mckm_0.predict(x_0)
-
     with ckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
         mckm_0_res = mckm_0.predict(x_0, progress_callback=pb.update)
 
@@ -128,9 +117,9 @@ if __name__ == '__main__':
     print('dbs:', mckm_0_res.dbs)
     print('chs:', mckm_0_res.chs)
 
-    fig = ckmeans.plotting.plot_multickmeans_metrics(mckm_0_res, figsize=(10, 10))
+    fig = ckmeans.plot_multickmeans_metrics(mckm_0_res, figsize=(10, 10))
     fig.savefig(path / f'manual_test_img_metrics0.png')
 
     for k, ckm_res in zip(ks, mckm_0_res.ckmeans_results):
-        fig = ckmeans.plotting.plot_ckmeans_result(ckm_res, figsize=(10, 10))
+        fig = ckmeans.plot_ckmeans_result(ckm_res, figsize=(10, 10))
         fig.savefig(path / f'manual_test_img_k-{k}.png')

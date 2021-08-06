@@ -4,4 +4,4 @@
 '''
 
 from .core import CKmeans, MultiCKMeans
-from .pcoa import pcoa
+from .utils import plot_ckmeans_result, plot_multickmeans_metrics

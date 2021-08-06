@@ -1,4 +1,4 @@
-''' Plotting module
+''' Plotting utitlies
 '''
 
 from typing import Iterable, Optional, Tuple, Union
@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import matplotlib.figure
 import matplotlib.colors
 import matplotlib.axes
-from ckmeans.core import CKmeansResult, MultiCKmeansResult
+import ckmeans.core
 
 def plot_ckmeans_result(
-    ckm_res: 'CKmeansResult',
+    ckm_res: ckmeans.core.CKmeansResult,
     names: Optional[Iterable[str]] = None,
     order: Optional[Union[str, numpy.ndarray]] = 'GW',
     cmap_cm: Union[str, matplotlib.colors.Colormap] = 'Blues',
@@ -106,7 +106,7 @@ def plot_ckmeans_result(
     return fig
 
 def plot_multickmeans_metrics(
-    mckm_res: 'MultiCKmeansResult',
+    mckm_res: ckmeans.core.MultiCKmeansResult,
     figsize: Tuple[float, float] = (7, 7),
 ) -> matplotlib.figure.Figure:
     '''plot_multickmeans_metrics

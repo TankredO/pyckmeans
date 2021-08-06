@@ -1,6 +1,8 @@
 ''' Module for ckmeans utilities
 '''
 
+from typing import Dict, Any
+
 import tqdm
 from ckmeans.core import MultiCKMeans
 
@@ -13,10 +15,13 @@ class MultiCKMeansProgressBars:
     ----------
     mckm : MultiCKMeans
         MultiCKMeans object to display progress bars for.
+    kwargs : Dict[str, Any]
+        Additional keyword arguments passed to tqdm.tqdm.
     '''
     def __init__(
         self,
         mckm: 'MultiCKMeans',
+        **kwargs: Dict[str, Any],
     ):
         self.mckm = mckm
 
@@ -27,10 +32,17 @@ class MultiCKMeansProgressBars:
         self._iter = 0
         self._done = False
 
+        # tqdm options
+        self._tqdm_kwargs = {
+        }
+        self._tqdm_kwargs.update(kwargs)
+
+        # init first progress bar
         self._tqdm = tqdm.tqdm(
             total=self.n_rep,
             mininterval=0.5,
-            desc=f'k={self.ks[self._ckm_idx]}'
+            desc=f'k={self.ks[self._ckm_idx]}',
+            **self._tqdm_kwargs,
         )
 
     def update(
@@ -61,7 +73,8 @@ class MultiCKMeansProgressBars:
             else:
                 self._tqdm = tqdm.tqdm(
                     total=self.n_rep,
-                    desc=f'k={self.ks[self._ckm_idx]}'
+                    desc=f'k={self.ks[self._ckm_idx]}',
+                    **self._tqdm_kwargs,
                 )
 
     def __enter__(self):

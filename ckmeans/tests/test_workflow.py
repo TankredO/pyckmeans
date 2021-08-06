@@ -8,7 +8,7 @@ from ckmeans.io import read_alignment
 from ckmeans.distance import alignment_distance
 from ckmeans.pcoa import pcoa
 from ckmeans.core import CKmeans, MultiCKMeans
-from ckmeans.plotting import plot_ckmeans_result, plot_multickmeans_metrics
+from ckmeans import plot_ckmeans_result, plot_multickmeans_metrics
 
 PHYLIP_STR_0 = \
 '''10 9

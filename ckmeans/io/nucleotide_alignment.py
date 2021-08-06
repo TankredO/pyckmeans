@@ -43,7 +43,7 @@ BASE_ENCODING = {
     '?': 0b00000010
 }
 BASE_ENCODING_INVERSE = {
-    v:k for k, v in BASE_ENCODING.items() if k.isupper() or k == '-'
+    v:k for k, v in BASE_ENCODING.items() if k.isupper() or k in ('-', '?')
 }
 
 class InvalidAlignmentFileExtensionError(Exception):
