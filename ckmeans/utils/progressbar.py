@@ -20,7 +20,7 @@ class MultiCKMeansProgressBars:
     '''
     def __init__(
         self,
-        mckm: 'MultiCKMeans',
+        mckm: MultiCKMeans,
         **kwargs: Dict[str, Any],
     ):
         self.mckm = mckm
