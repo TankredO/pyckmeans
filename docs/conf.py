@@ -13,7 +13,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../ckmeans'))
+sys.path.insert(0, os.path.abspath('../pyckmeans'))
 
 
 # -- Project information -----------------------------------------------------

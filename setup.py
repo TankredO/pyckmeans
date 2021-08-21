@@ -1,8 +1,16 @@
 ''' setup
 '''
 
+import re
+import io
 from distutils.command.build_ext import build_ext as build_ext_orig
 from setuptools import setup, find_packages, Extension
+
+# source: https://stackoverflow.com/a/39671214
+__version__ = re.search(
+    r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+    io.open('pyckmeans/__init__.py', encoding='utf_8_sig').read()
+).group(1)
 
 # ==== ctypes extensions
 class CTypesExtension(Extension):
@@ -25,20 +33,38 @@ class build_ext(build_ext_orig):
         return super().get_ext_filename(ext_name)
 
 distance_module = CTypesExtension(
-    'ckmeans.distance.lib.distance',
-    sources=['ckmeans/distance/src/distance.cpp'],
+    'pyckmeans.distance.lib.distance',
+    sources=['pyckmeans/distance/src/distance.cpp'],
 )
 
 ext_modules = [distance_module]
 
+install_requires = [
+    'numpy',
+    'pandas',
+    'scipy',
+    'scikit-learn',
+    'matplotlib',
+    'tqdm',
+]
+
+# ====
+description = 'A consensus K-Means implementation.'
+
+long_description_content_type='text/x-rst'
+long_description = 'A consensus K-Means implementation.'
 # ====
 setup(
-    name='ckmeans',
+    name='pyckmeans',
+    version=__version__,
     packages=find_packages(),
-    description='A consensus K-Means implementation.',
+    description=description,
+    long_description=long_description,
+    long_description_content_type=long_description_content_type,
     author='Tankred Ott',
     platforms=['any'],
     python_requires='>=3.6',
+    install_requires=install_requires,
     cmdclass={'build_ext': build_ext},
     ext_modules=ext_modules,
 )
