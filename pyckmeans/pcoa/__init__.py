@@ -15,12 +15,57 @@ import pandas
 import pyckmeans.distance
 
 class InvalidPCOAResultError(Exception):
-    '''InvalidPCOAResultError'''
+    '''InvalidPCOAResultError
+
+    Error, signalling an invalid PCOAResult.
+    '''
 
 class IncompatibleNamesError(Exception):
-    '''IncompatibleNamesError'''
+    '''IncompatibleNamesError
+
+    Error, signalling that provided names are incompatible with provided data.
+    '''
+
+class InvalidFilterError(Exception):
+    '''InvalidFilterError'''
+
+class InvalidOutFormatError(Exception):
+    '''InvalidOutFormatError'''
 
 class PCOAResult:
+    '''PCOAResult
+
+    Object containing the results of a Principle Coordinate Analysis.
+
+    Parameters
+    ----------
+    vectors : numpy.ndarray
+        n * m matrix of potentially corrected eigenvectors, where
+        n is the number of samples and m is the number of retained axes.
+    eigvals : numpy.ndarray
+        Vector of eigenvalues.
+    eigvals_rel : numpy.ndarray
+        Vector of relative eigenvalues.
+    trace : float
+        Trace.
+    negative_eigvals : bool
+        Bool, determining whether negative eigenvalues are present.
+    correction : Optional[str], optional
+        Type of correction, by default None
+    eigvals_corr_rel : Optional[numpy.ndarray], optional
+        Vector of corrected relative eigenvalues, by default None
+    trace_corr : Optional[float], optional
+        Corrected trace, by default None
+    names : Optional[Iterable[str]], optional
+        Vector of names, by default None
+
+    Raises
+    ------
+    InvalidPCOAResultError
+        Raised if invalid parameter combinations are provided.
+    IncompatibleNamesError
+        Raised if provided names are incompatible with provided data.
+    '''
     def __init__(
         self,
         vectors: numpy.ndarray,
@@ -91,6 +136,79 @@ class PCOAResult:
 
         return str_repr
 
+    def get_vectors(
+        self,
+        filter_by: Optional[str] = None,
+        filter_th: Optional[float] = None,
+        out_format: str = 'numpy',
+    ) -> Union[numpy.ndarray, pandas.DataFrame]:
+        '''getVectors
+
+        Get eigenvectors, potentially filtered by cumulative eigenvalue scores.
+
+        Parameters
+        ----------
+        filter_by : Optional[str], optional
+            Cumulative eigenvalue score to filter by or None if no filtering should be applied,
+            by default None.
+            Can be one of:
+
+            * 'eigvals_cum'
+            * 'eigvals_rel_cum'
+            * 'eigvals_rel_corrected_cum'
+
+            If filter_by is provided filter_th is required.
+
+        filter_th : Optional[float], optional
+            Filtering treshold, by default None.
+            Eigenvectors will be retained until cumulative eigenvalue score
+            is greater than or equal to filter_th.
+        out_format : str, optional
+            Output format, by default 'numpy'.
+            Must be 'numpy' or 'np' for output as numpy.ndarray (Note: name information
+            will be lost), or 'pandas' or 'pd' for output as pandas.DataFrame.
+
+        Returns
+        -------
+        Union[numpy.ndarray, pandas.DataFrame]
+            Get eigenvectors, potentially filtered by eigenvalue scores as numpy.ndarray
+            or pandas.DataFrame. The pandas.DataFrame will use names as index, if available.
+
+        Raises
+        ------
+        InvalidFilterError
+            Raised if filter arguments are invalid.
+        InvalidOutFormatError
+            Raised if an invalid out_format is provided.
+        '''
+        available_filters = ('eigvals_cum', 'eigvals_rel_cum', 'eigvals_rel_corrected_cum')
+        output_formats = ('numpy', 'np', 'pandas', 'pd')
+
+        x = self.vectors
+
+        if (not filter_by is None) or (not filter_th is None):
+            if filter_th is None:
+                raise InvalidFilterError('filter_th is required since filter_by is provided')
+            if filter_by is None:
+                raise InvalidFilterError('filter_by is required since filter_th is provided')
+
+            if filter_by not in available_filters:
+                msg = f'Invalid filter_by argument "{filter_by}". ' +\
+                    f'filter_by must be one of {available_filters}.'
+                raise InvalidFilterError(msg)
+
+            idcs = (self.values[filter_by] < filter_th)[:x.shape[1]]
+            x = x[:, idcs]
+
+        if out_format not in output_formats:
+            msg = f'Invalid out_format argument "{out_format}". ' +\
+                f'out_format must be one of {output_formats}.'
+            raise InvalidOutFormatError(msg)
+
+        if out_format in ('pandas', 'pd'):
+            x = pandas.DataFrame(x, index=self.names)
+
+        return x
 
 def _center_mat(dmat: numpy.ndarray) -> numpy.ndarray:
     '''_center_mat
@@ -118,19 +236,25 @@ class InvalidCorrectionTypeError(Exception):
     '''InvalidCorrectionTypeError'''
 
 class NegativeEigenvaluesCorrectionError(Exception):
-    '''FailedCorrectionError'''
+    '''FailedCorrectionError
+
+    Error, signalling that the correction of negative eigenvalues failed.
+    '''
 
 class NegativeEigenvaluesWarning(Warning):
-    '''NegativeEigenvaluesWarning'''
+    '''NegativeEigenvaluesWarning
+
+    Warning, signalling that negative eigenvalues were encountered.
+    '''
 
 def pcoa(
     dist: Union[numpy.ndarray, pyckmeans.distance.DistanceMatrix],
     correction: Optional[str] = None,
-    eps: float = 0.0001
+    eps: float = 1e-8,
 ) -> PCOAResult:
     '''pcoa
 
-    Principle Component Analysis.
+    Principle Coordinate Analysis.
 
     Parameters
     ----------
@@ -143,12 +267,12 @@ def pcoa(
             - lingoes: Lingoes correction
             - cailliez: Cailliet correction
     eps : float, optional
-        Epsilon, by default 0.0001
+        Eigenvalues smaller than eps will be dropped. By default 0.0001
 
     Returns
     -------
     PCOAResult
-        PCOA result object.
+        PCoA result object.
 
     Raises
     ------
@@ -218,8 +342,8 @@ def pcoa(
         # negative eigenvalues, no correction
         if not correction:
             warn(
-                'Negative eigenvalues encountered but no correction applied. ' +\
-                    'Negative eigenvalues will be treated as 0.',
+                'Negative eigenvalues encountered but no correction applied. '
+                'Negative eigenvalues will be treated as 0.',
                 NegativeEigenvaluesWarning,
             )
 

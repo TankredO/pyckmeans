@@ -140,5 +140,8 @@ cython_debug/
 # vscode
 .vscode
 
-# test images
+# test data
 *test*.png
+pyckmeans/tests/*.pickle
+pyckmeans/tests/*.csv
+pyckmeans/tests/*.json

@@ -1,5 +1,6 @@
 import pathlib
 import time
+import pickle
 
 import numpy as np
 import numpy.random as random
@@ -107,6 +108,11 @@ if __name__ == '__main__':
     print('fitting multi ...')
     with pyckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
         mckm_0.fit(x_0, pb.update)
+
+    with open(path / 'mckm_0.pickle', 'wb') as f:
+        pickle.dump(mckm_0, f)
+
+    pickle.load()
 
     print('predicting multi ...')
     with pyckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:

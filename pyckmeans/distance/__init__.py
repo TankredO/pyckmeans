@@ -80,6 +80,90 @@ class DistanceMatrix:
         '''
         return pyckmeans.io.phylip.read_phylip_distmat(file_path)
 
+    @staticmethod
+    def from_csv( # pylint: disable=missing-param-doc
+        file_path: str,
+        header: Optional[int] = 0,
+        index_col: Optional[int] = 0,
+        sep: str = ',',
+        **kwargs,
+    ) -> 'DistanceMatrix':
+        '''read_csv_distmat
+
+        Read distance matrix from CSV file.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to CSV file.
+        header : Optional[int]
+            Determines the row in the CSV file containing
+            sample names. Is passed to pandas.read_csv(). By default 0, meaning
+            the first row.
+        index_col : Optional[int]
+            Determines the index column. By default, the first column is expected
+            to contain sample names. Passed to pandas.read_csv().
+        sep : str
+            Column separator, be default ','. Passed to Passed to pandas.read_csv().
+        **kwargs
+            Additional keyword arguments passed to pandas.read_csv().
+        Returns
+        -------
+        pyckmeans.distance.DistanceMatrix
+            DistanceMatrix object.
+        '''
+        return pyckmeans.io.csv.read_csv_distmat(
+            file_path=file_path,
+            header=header,
+            index_col=index_col,
+            sep=sep,
+            **kwargs,
+        )
+
+    def to_phylip(
+        self,
+        file_path: str,
+        force: bool = False,
+    ):
+        '''to_phylip
+
+        Write distance matrix to file in PHYLIP matrix format.
+
+        Parameters
+        ----------
+        file_path : str
+            Output file path.
+        force : bool, optional
+            Force overwrite if file exists, by default False
+        '''
+        pyckmeans.io.phylip.write_phylip_distmat(
+            dist=self,
+            file_path=file_path,
+            force=force,
+        )
+
+    def to_csv(
+        self,
+        file_path: str,
+        force: bool = False,
+    ):
+        '''to_csv
+
+        Write DistanceMatrix object to CSV.
+
+        Parameters
+        ----------
+        file_path : str
+            CSV file path.
+        force : bool, optional
+            Force overwrite if file_path already exists, by default False
+        '''
+        pyckmeans.io.csv.write_csv_distmat(
+            dist=self,
+            file_path=file_path,
+            force=force,
+        )
+
 class InvalidDistanceTypeError(Exception):
     '''UnknownDistanceTypeError'''
 

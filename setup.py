@@ -67,4 +67,5 @@ setup(
     install_requires=install_requires,
     cmdclass={'build_ext': build_ext},
     ext_modules=ext_modules,
+    url='https://github.com/TankredO/pyckmeans',
 )

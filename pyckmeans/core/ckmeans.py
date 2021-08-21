@@ -3,6 +3,7 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import numpy
+import pandas
 from sklearn.cluster import KMeans
 from sklearn.metrics import (
     silhouette_score,
@@ -358,7 +359,7 @@ class CKmeans:
 
     def fit(
         self,
-        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult],
+        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame],
         progress_callback: Optional[Callable] = None,
     ):
         '''fit
@@ -367,9 +368,9 @@ class CKmeans:
 
         Parameters
         ----------
-        x : numpy.ndarray
-            n * m matrix, where n is the number of samples (observations) and m is
-            the number of features (predictors).
+        x : Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame]
+            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors).
             Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
@@ -377,6 +378,8 @@ class CKmeans:
 
         if isinstance(x, pyckmeans.pcoa.PCOAResult):
             x = x.vectors
+        elif isinstance(x, pandas.DataFrame):
+            x = x.values
 
         # _fit is called here to be able to extend later on.
         # The plan is to add a parallel fitting function later on
@@ -385,7 +388,7 @@ class CKmeans:
 
     def predict(
         self,
-        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult],
+        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame],
         linkage_type: str = 'average',
         progress_callback: Optional[Callable] = None,
     ) -> CKmeansResult:
@@ -396,8 +399,9 @@ class CKmeans:
         Parameters
         ----------
         x : Union[numpy.ndarray, PCOAResult]
-            n * m matrix, where n is the number of samples (observations) and m is
-            the number of features (predictors).
+            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors). If x is a
+            dataframe, the index will be used a sample names.
             Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
         linkage_type : str
             Linkage type of the hierarchical clustering that is used for consensus cluster
@@ -423,6 +427,9 @@ class CKmeans:
         if isinstance(x, pyckmeans.pcoa.PCOAResult):
             names = x.names
             x = x.vectors
+        elif isinstance(x, pandas.DataFrame):
+            names = x.index
+            x = x.values
 
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 

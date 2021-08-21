@@ -3,7 +3,7 @@
     Comma Separated Value (CSV) input and output.
 '''
 import os
-from typing import Optional, Union
+from typing import Optional
 
 import pandas
 
