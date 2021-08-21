@@ -7,12 +7,11 @@ Welcome to pyckmeans' documentation!
     :maxdepth: 1
     :caption: Contents:
 
-    1-installation.rst
+    installation.rst
+    documentation.rst
 
+Indices and tables
+==================
 
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
+* :ref:`genindex`
+* :ref:`modindex`

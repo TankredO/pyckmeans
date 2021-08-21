@@ -115,12 +115,31 @@ class CKmeansResult:
         Calinski-Harabasz score of the consensus clustering.
     names: Optional[Iterable(str)]
         Sample names.
+
+    Attributes
+    ----------
+    cmatrix : numpy.ndarray
+        Consensus matrix.
+    cl : numpy.ndarray
+        Cluster membership.
+    names : Optional[numpy.ndarray]
+        Sample names.
+    k : int
+        Number of clusters.
+    bic : Optional[float]
+        Bayesian Information Criterion score of the clustering.
+    sil : Optional[float]
+        Silhouette scor of the clustering.
+    db : Optional[float]
+        Davies-Bouldin score of the clustering.
+    ch : Optional[float]
+        Calinski-Harabasz score of the clustering.
     '''
     def __init__(
         self,
         consensus_matrix: numpy.ndarray,
         cluster_membership: numpy.ndarray,
-        k: float,
+        k: int,
         bic: Optional[float] = None,
         sil: Optional[float] = None,
         db: Optional[float] = None,
@@ -136,7 +155,7 @@ class CKmeansResult:
         self.db = db
         self.ch = ch
 
-        self.names = None if names is None else numpy.array(names)
+        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
 
     def order(
         self,
@@ -265,7 +284,10 @@ class CKmeansResult:
 
 
 class InvalidClusteringMetric(Exception):
-    '''InvalidClusteringMetric'''
+    '''InvalidClusteringMetric
+
+    Error signalling that an invalid clustering metric was provided.
+    '''
 
 class CKmeans:
     '''CKmeans
