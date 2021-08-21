@@ -6,7 +6,7 @@ Documentation
 .. toctree::
     :maxdepth: 3
 
-    ckmeans
+    pyckmeans
 
 Indices and tables
 ------------------

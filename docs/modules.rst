@@ -1,7 +1,7 @@
-ckmeans
-=======
+pyckmeans
+=========
 
 .. toctree::
    :maxdepth: 4
 
-   ckmeans
+   pyckmeans
