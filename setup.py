@@ -51,7 +51,7 @@ install_requires = [
 # ====
 description = 'A consensus K-Means implementation.'
 
-long_description_content_type='text/x-rst'
+long_description_content_type = 'text/x-rst'
 long_description = 'A consensus K-Means implementation.'
 # ====
 setup(
