@@ -7,7 +7,7 @@
 # https://github.com/biocore/scikit-bio/blob/0.5.4/skbio/stats/ordination/_principal_coordinate_analysis.py#L23
 
 from warnings import warn
-from typing import Iterable, Optional, Tuple, Dict, Union
+from typing import Iterable, Optional, Union
 
 import numpy
 import pandas

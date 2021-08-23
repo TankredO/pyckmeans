@@ -1,6 +1,6 @@
 '''ckmeans module'''
 
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Union, Tuple
 
 import numpy
 import pandas
@@ -282,6 +282,49 @@ class CKmeansResult:
         ckmres.names = None if ckmres.names is None else ckmres.names[order]
 
         return ckmres
+
+    def plot(
+        self,
+        names: Optional[Iterable[str]] = None,
+        order: Optional[Union[str, numpy.ndarray]] = 'GW',
+        cmap_cm: Union[str, 'matplotlib.colors.Colormap'] = 'Blues',
+        cmap_clbar: Union[str, 'matplotlib.colors.Colormap'] = 'tab20',
+        figsize: Tuple[float, float] = (7, 7),
+    ) -> 'matplotlib.figure.Figure':
+        '''plot
+
+        Plot pyckmeans result consensus matrix with consensus clusters.
+
+        Parameters
+        ----------
+        names : Optional[Iterable[str]]
+            Sample names to be plotted.
+        order : Optional[Union[str, numpy.ndarray]]
+            Sample Plotting order. Either a string, determining the oder method to use
+            (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
+            or None to apply no reordering.
+        cmap_cm : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the consensus matrix, by default 'Blues'
+        cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the cluster bar, by default 'tab20'
+        figsize : Tuple[float, float], optional
+            Figure size for the matplotlib figure, by default (7, 7).
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib figure.
+        '''
+        from pyckmeans.utils import plot_ckmeans_result
+
+        return plot_ckmeans_result(
+            ckm_res=self,
+            names=names,
+            order=order,
+            cmap_cm=cmap_cm,
+            cmap_clbar=cmap_clbar,
+            figsize=figsize,
+        )
 
 
 class InvalidClusteringMetric(Exception):

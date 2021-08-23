@@ -83,17 +83,20 @@ def test_multi_workflow(prep_pcoa_results):
     mckm_0_res = mckm_0.predict(pcoares_0)
 
     plot_multickmeans_metrics(mckm_0_res)
+    mckm_0_res.plot_metrics()
 
     mckm_1 = MultiCKMeans([2,3,3])
     mckm_1.fit(pcoares_0.vectors)
     mckm_1_res = mckm_1.predict(pcoares_0.vectors)
     plot_multickmeans_metrics(mckm_1_res)
+    mckm_1_res.plot_metrics()
 
     mckm_2 = MultiCKMeans([2,3,3])
     df = pd.DataFrame(pcoares_0.vectors, pcoares_0.names)
     mckm_2.fit(df)
     mckm_2_res = mckm_2.predict(df)
     plot_multickmeans_metrics(mckm_2_res)
+    mckm_2_res.plot_metrics()
 
 def test_plotting(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]
@@ -108,3 +111,7 @@ def test_plotting(prep_pcoa_results):
     plot_ckmeans_result(ckm_0_res)
     plot_ckmeans_result(ckm_0_res, order=None)
     plot_ckmeans_result(ckm_0_res, order=ord)
+
+    ckm_0_res.plot()
+    ckm_0_res.plot(order=None)
+    ckm_0_res.plot(order=ord)

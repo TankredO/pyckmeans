@@ -1,6 +1,6 @@
 '''multickmeans module'''
 
-from typing import List, Optional, Iterable, Dict, Any, Union, Callable
+from typing import List, Optional, Iterable, Dict, Any, Tuple, Union, Callable
 import numpy
 import pandas
 
@@ -164,6 +164,32 @@ class MultiCKmeansResult:
             mckmres = MultiCKmeansResult(ckm_results, names=names)
 
         return mckmres
+
+    def plot_metrics(
+        self,
+        figsize: Tuple[float, float] = (7, 7),
+    ) -> 'matplotlib.figure.Figure':
+        '''plot_metrics
+
+        Plot MultiCKMeansResult metrics.
+
+        Parameters
+        ----------
+        figsize : Tuple[float, float], optional
+            Figure size for the matplotlib figure, by default (7, 7).
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib Figure of the metrics plot.
+        '''
+
+        from pyckmeans.utils import plot_multickmeans_metrics
+
+        return plot_multickmeans_metrics(
+            mckm_res=self,
+            figsize=figsize,
+        )
 
 class MultiCKMeans:
     '''MultiCKMeans
