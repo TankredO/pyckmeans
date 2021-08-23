@@ -1,4 +1,4 @@
-name: Publish to PyPi
+name: Publish wheels to PyPi
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +7,7 @@ on:
         required: true
         default: 'warning'
       tags:
-        description: 'Publish to PyPi tags'
+        description: 'Publish wheels to PyPi tags'
 jobs:
   Publish-to-PyPi:
     name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -39,7 +39,7 @@ jobs:
       - name: Install pyckmeans
         run: |
           python -m pip install --no-deps --ignore-installed -vv .
-          python setup.py sdist bdist_wheel
+          python setup.py bdist_wheel
       - name: Publish to PyPI
         run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }}
       - run: echo "This job's status is ${{ job.status }}."
