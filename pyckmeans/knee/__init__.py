@@ -93,6 +93,13 @@ class KneeLocator(object):
         Raised if invalid curve or direction argument passed.
     ValueError
         Raised if invalid interp_method argument passed.
+
+    References
+    ----------
+    V. Satopaa, J. Albrecht, D. Irwin and B. Raghavan. 2011.
+    "Finding a "Kneedle" in a Haystack: Detecting Knee Points in System Behavior".
+    31st International Conference on Distributed Computing Systems Workshops.
+    doi: 10.1109/ICDCSW.2011.20.
     '''
 
     def __init__(
