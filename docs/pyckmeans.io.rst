@@ -1,11 +1,6 @@
 pyckmeans.io package
 ====================
 
-.. automodule:: pyckmeans.io
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Submodules
 ----------
 
@@ -37,6 +32,14 @@ pyckmeans.io.phylip module
 --------------------------
 
 .. automodule:: pyckmeans.io.phylip
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: pyckmeans.io
    :members:
    :undoc-members:
    :show-inheritance:

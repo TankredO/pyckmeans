@@ -1,11 +1,6 @@
 pyckmeans package
 =================
 
-.. automodule:: pyckmeans
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Subpackages
 -----------
 
@@ -19,3 +14,11 @@ Subpackages
    pyckmeans.ordering
    pyckmeans.pcoa
    pyckmeans.utils
+
+Module contents
+---------------
+
+.. automodule:: pyckmeans
+   :members:
+   :undoc-members:
+   :show-inheritance:

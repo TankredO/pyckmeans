@@ -1,11 +1,6 @@
 pyckmeans.core package
 ======================
 
-.. automodule:: pyckmeans.core
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Submodules
 ----------
 
@@ -29,6 +24,14 @@ pyckmeans.core.wecr module
 --------------------------
 
 .. automodule:: pyckmeans.core.wecr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: pyckmeans.core
    :members:
    :undoc-members:
    :show-inheritance:
