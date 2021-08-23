@@ -10,16 +10,16 @@ source:
 build:
   # noarch: python
   number: 0
-  script: "{{ PYTHON }} -m pip install . -vv"
+  script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed -vv ."
 
 requirements:
   build:
     - {{ compiler('cxx') }}
   host:
-    - python>=3.6
+    - python {{ python }}
     - pip
   run:
-    - python>=3.6
+    - python
     - numpy
     - pandas
     - scipy
