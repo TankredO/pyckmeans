@@ -36,7 +36,6 @@ jobs:
         run: which python
       - name: Install pyckmeans
         run: |
-          cd ${{ github.repository }}
           python -m pip install --no-deps --ignore-installed -vv .
           python setup.py sdist bdist_wheel
       - name: Publish to PyPI
