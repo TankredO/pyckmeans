@@ -34,6 +34,14 @@ class MultiCKmeansResult:
         self.dbs = [ckm_res.db for ckm_res in ckmeans_results]
         self.chs = [ckm_res.ch for ckm_res in ckmeans_results]
 
+        self.metric = pandas.DataFrame({
+            'k': self.ks,
+            'sil': self.sils,
+            'bic': self.bics,
+            'db': self.dbs,
+            'ch': self.chs,
+        })
+
     def order(
         self,
         by: int,
