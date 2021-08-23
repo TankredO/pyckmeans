@@ -40,5 +40,6 @@ jobs:
       - name: Install conda packages
         run: conda install conda-build anaconda-client
       - name: Build and publish
+        shell: bash -l {0}
         run: conda-build ${{ github.workspace }}/conda.recipe --user ${{secrets.ANACONDA_USER}} --token ${{secrets.ANACONDA_TOKEN}}
       - run: echo "This job's status is ${{ job.status }}."
