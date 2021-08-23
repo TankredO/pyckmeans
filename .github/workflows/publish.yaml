@@ -1,13 +1,13 @@
 name: Publish to Anaconda Cloud
 on:
   workflow_dispatch:
-  inputs:
-    logLevel:
-      description: 'Log level'     
-      required: true
-      default: 'warning'
-    tags:
-      description: 'Publish to Anaconda Cloud tags'  
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Publish to Anaconda Cloud tags'  
 jobs:
   Publish-to-Anaconda-Cloud:
     name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
