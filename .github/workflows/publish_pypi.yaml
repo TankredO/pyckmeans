@@ -1,0 +1,46 @@
+name: Publish to PyPi
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Publish to PyPi tags'
+jobs:
+  Publish-to-PyPi:
+    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+#         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        os: ["windows-latest"]
+        python-version: ["3.6", "3.7", "3.8", "3.9"]
+    steps:
+      - run: echo "This job was triggered by ${{ github.event_name }}."
+      - run: echo "This job is now running on ${{ runner.os }}."
+      - run: echo "The branch name is ${{ github.ref }}"
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Which version
+        run: which python
+      - name: Install pyckmeans
+        run: |
+          cd ${{ github.repository }}
+          python -m pip install --no-deps --ignore-installed -vv .
+          python setup.py sdist bdist_wheel
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}
+      - run: echo "This job's status is ${{ job.status }}."
