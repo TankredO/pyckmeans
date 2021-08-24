@@ -5,9 +5,9 @@ import os
 
 from pyckmeans.io import read_alignment
 from pyckmeans.distance import alignment_distance
-from pyckmeans.pcoa import PCOAResult, pcoa
+from pyckmeans.ordination import PCOAResult, pcoa
 from pyckmeans.core import CKmeans, MultiCKMeans
-from pyckmeans import plot_ckmeans_result, plot_multickmeans_metrics
+from pyckmeans.utils import plot_ckmeans_result, plot_multickmeans_metrics
 
 PHYLIP_STR_0 = \
 '''10 14

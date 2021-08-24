@@ -12,7 +12,7 @@ Subpackages
    pyckmeans.io
    pyckmeans.knee
    pyckmeans.ordering
-   pyckmeans.pcoa
+   pyckmeans.ordination
    pyckmeans.utils
 
 Module contents

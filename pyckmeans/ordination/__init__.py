@@ -1,4 +1,4 @@
-''' pcoa
+''' ordination
 
     Module for Principle Coordinate Analysis (PCoA) calculation.
 '''

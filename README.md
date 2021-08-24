@@ -36,7 +36,7 @@ pip install .
 ```python
 from pyckmeans import CKmeans
 from pyckmeans.io import NucleotideAlignment
-from pyckmeans.pcoa import pcoa
+from pyckmeans.ordination import pcoa
 ```
 
 More coming soon.

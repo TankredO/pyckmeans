@@ -4,7 +4,7 @@ from typing import List, Optional, Iterable, Dict, Any, Tuple, Union, Callable
 import numpy
 import pandas
 
-from pyckmeans.pcoa import PCOAResult
+from pyckmeans.ordination import PCOAResult
 from .ckmeans import CKmeansResult, CKmeans, InvalidClusteringMetric
 
 class MultiCKmeansResult:
@@ -258,7 +258,7 @@ class MultiCKMeans:
         x : Union[numpy.ndarray, PCOAResult]
             a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors).
-            Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
         '''
@@ -289,7 +289,7 @@ class MultiCKMeans:
             a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors). If x is a
             dataframe, the index will be used a sample names.
-            Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
         linkage_type : str
             Linkage type of the hierarchical clustering that is used for consensus cluster
             calculation. One of

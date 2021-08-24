@@ -12,7 +12,7 @@ from sklearn.metrics import (
 )
 from scipy.cluster import hierarchy
 
-import pyckmeans.pcoa
+import pyckmeans.ordination
 import pyckmeans.ordering
 
 # Could get this directly from sklearn.cluster.KMeans.inertia_,
@@ -402,7 +402,7 @@ class CKmeans:
 
     def fit(
         self,
-        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame],
+        x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
         progress_callback: Optional[Callable] = None,
     ):
         '''fit
@@ -411,15 +411,15 @@ class CKmeans:
 
         Parameters
         ----------
-        x : Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame]
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
             a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors).
-            Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
         '''
 
-        if isinstance(x, pyckmeans.pcoa.PCOAResult):
+        if isinstance(x, pyckmeans.ordination.PCOAResult):
             x = x.vectors
         elif isinstance(x, pandas.DataFrame):
             x = x.values
@@ -431,7 +431,7 @@ class CKmeans:
 
     def predict(
         self,
-        x: Union[numpy.ndarray, pyckmeans.pcoa.PCOAResult, pandas.DataFrame],
+        x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
         linkage_type: str = 'average',
         progress_callback: Optional[Callable] = None,
     ) -> CKmeansResult:
@@ -445,7 +445,7 @@ class CKmeans:
             a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors). If x is a
             dataframe, the index will be used a sample names.
-            Alternatively a pyckmeans.pcoa.PCOAResult as returned from pyckmeans.pcoa.
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
         linkage_type : str
             Linkage type of the hierarchical clustering that is used for consensus cluster
             calculation. One of
@@ -467,7 +467,7 @@ class CKmeans:
             precited cluster memberships.
         '''
         names = None
-        if isinstance(x, pyckmeans.pcoa.PCOAResult):
+        if isinstance(x, pyckmeans.ordination.PCOAResult):
             names = x.names
             x = x.vectors
         elif isinstance(x, pandas.DataFrame):
