@@ -10,7 +10,6 @@ on:
         description: 'Start readthedocs build tags'  
 jobs:
   start-readthedocs-build:
-    name:
     runs-on: "ubuntu-latest"
     steps:
-      - run: curl -X POST -d "token=${{secrets.READTHEDOCS_TOKEN}}" readthedocs.org/api/v2/webhook/pyckmeans/163759/
+      - run: curl -d "token==${{secrets.READTHEDOCS_TOKEN}}" -X POST https://readthedocs.org/api/v2/webhook/pyckmeans/163759/
