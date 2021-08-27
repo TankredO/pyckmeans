@@ -76,6 +76,23 @@ def test_simple_workflow(prep_phylip_files):
     print('ckm_2_res.cl:', ckm_2_res.cl)
     print('ckm_2_res.names:', ckm_2_res.names)
 
+    ckm_2_res_cls = ckm_2.predict(df, return_cls=True)
+    assert ckm_2_res_cls.km_cls.shape == (ckm_2.n_rep, df.shape[0])
+    ckm_2_res_cls.sort()
+
+    # test copy
+    ckm_2_res_cls_cp = ckm_2_res_cls.copy()
+    ckm_2_res_cls_cp.cl[0] = -1000
+    ckm_2_res_cls_cp.km_cls[0,0] = -1000
+    assert ckm_2_res_cls_cp.cl[0] != ckm_2_res_cls.cl[0]
+    assert ckm_2_res_cls_cp.km_cls[0,0] != ckm_2_res_cls.km_cls[0,0]
+    assert not ckm_2_res_cls_cp is ckm_2_res_cls
+
+    # test recalculate cluster memberships
+    ckm_2_res_cls_cp_rcm_1 = ckm_2_res_cls_cp.recalculate_cluster_memberships(df, 'average', in_place=False)
+    ckm_2_res_cls_cp_rcm_2 = ckm_2_res_cls_cp.recalculate_cluster_memberships(df, 'average', in_place=True)
+    assert ckm_2_res_cls_cp_rcm_2 is ckm_2_res_cls_cp
+
 def test_multi_workflow(prep_pcoa_results):
     pcoares_0: PCOAResult = prep_pcoa_results[0]
     mckm_0 = MultiCKMeans([2,3,3])
@@ -91,12 +108,16 @@ def test_multi_workflow(prep_pcoa_results):
     plot_multickmeans_metrics(mckm_1_res)
     mckm_1_res.plot_metrics()
 
-    mckm_2 = MultiCKMeans([2,3,3])
+    mckm_2 = MultiCKMeans([2,3,3], n_rep=100)
     df = pd.DataFrame(pcoares_0.vectors, pcoares_0.names)
     mckm_2.fit(df)
     mckm_2_res = mckm_2.predict(df)
     plot_multickmeans_metrics(mckm_2_res)
     mckm_2_res.plot_metrics()
+
+    mckm_2_res_cls = mckm_2.predict(df, return_cls=True)
+    assert mckm_2_res_cls.ckmeans_results[0].km_cls.shape == (mckm_2.n_rep, df.shape[0])
+    mckm_2_res_cls.sort(0)
 
 def test_plotting(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]

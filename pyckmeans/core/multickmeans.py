@@ -27,12 +27,12 @@ class MultiCKmeansResult:
         self.ckmeans_results = ckmeans_results
         self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
 
-        self.ks = [ckm_res.k for ckm_res in ckmeans_results]
+        self.ks = numpy.array([ckm_res.k for ckm_res in ckmeans_results])
 
-        self.sils = [ckm_res.sil for ckm_res in ckmeans_results]
-        self.bics = [ckm_res.bic for ckm_res in ckmeans_results]
-        self.dbs = [ckm_res.db for ckm_res in ckmeans_results]
-        self.chs = [ckm_res.ch for ckm_res in ckmeans_results]
+        self.sils = numpy.array([ckm_res.sil for ckm_res in ckmeans_results])
+        self.bics = numpy.array([ckm_res.bic for ckm_res in ckmeans_results])
+        self.dbs = numpy.array([ckm_res.db for ckm_res in ckmeans_results])
+        self.chs = numpy.array([ckm_res.ch for ckm_res in ckmeans_results])
 
         self.metric = pandas.DataFrame({
             'k': self.ks,
@@ -277,6 +277,7 @@ class MultiCKMeans:
         self,
         x: Union[numpy.ndarray, PCOAResult, pandas.DataFrame],
         linkage_type: str = 'average',
+        return_cls: bool = False,
         progress_callback: Optional[Callable] = None,
     ) -> MultiCKmeansResult:
         '''predict
@@ -301,6 +302,9 @@ class MultiCKMeans:
             * 'centroid'
 
             See scipy.cluster.hierarchy.linkage for details.
+        return_cls : bool
+            If True, the cluster memberships of the single K-Means runs will be present
+            in the output.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
 
@@ -321,7 +325,8 @@ class MultiCKMeans:
             ckm_res = ckm.predict(
                 x=x,
                 linkage_type=linkage_type,
-                progress_callback=progress_callback
+                return_cls=return_cls,
+                progress_callback=progress_callback,
             )
             ckmeans_results.append(ckm_res)
 

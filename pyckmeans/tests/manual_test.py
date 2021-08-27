@@ -62,14 +62,22 @@ if __name__ == '__main__':
     if tqdm:
         with tqdm.tqdm(total=n_rep) as bar:
             t2 = time.time()
-            ckm_0_res = ckm_0.predict(x_0, progress_callback=bar.update)
+            ckm_0_res = ckm_0.predict(x_0, progress_callback=bar.update, return_cls=True)
             t3 = time.time()
     else:
         t2 = time.time()
-        ckm_0_res = ckm_0.predict(x_0)
+        ckm_0_res = ckm_0.predict(x_0, return_cls=True)
         t3 = time.time()
 
     print(ckm_0_res.cmatrix)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_00.tsv', one_hot=False, row_names=False, col_names=False)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_10.tsv', one_hot=False, row_names=True, col_names=False)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_01.tsv', one_hot=False, row_names=False, col_names=True)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_11.tsv', one_hot=False, row_names=True, col_names=True)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_oh_00.tsv', one_hot=True, row_names=False, col_names=False)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_oh_10.tsv', one_hot=True, row_names=True, col_names=False)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_oh_01.tsv', one_hot=True, row_names=False, col_names=True)
+    ckm_0_res.save_km_cls(path / 'ckm_0_res_km_cls_oh_11.tsv', one_hot=True, row_names=True, col_names=True)
 
     print(t1 - t0)
     print(t3 - t2)
@@ -78,18 +86,16 @@ if __name__ == '__main__':
     # ax.imshow(ckm_0_res.sort().cmatrix)
     # fig.savefig(path / 'manual_test_img0.png')
 
-    fig = pyckmeans.plot_ckmeans_result(ckm_0_res, figsize=(10, 10))
+    fig = ckm_0_res.plot(figsize=(10, 10))
     fig.savefig(path / 'manual_test_img0.png')
 
-    fig = pyckmeans.plot_ckmeans_result(
-        ckm_0_res,
+    fig = ckm_0_res.plot(
         names=np.arange(x_0.shape[0]).astype('str'),
         figsize=(10, 10),
     )
     fig.savefig(path / 'manual_test_img1.png')
 
-    fig = pyckmeans.plot_ckmeans_result(
-        ckm_0_res,
+    fig = ckm_0_res.plot(
         names=np.arange(x_0.shape[0]).astype('str'),
         figsize=(10, 10),
         order=None,
@@ -112,8 +118,6 @@ if __name__ == '__main__':
     with open(path / 'mckm_0.pickle', 'wb') as f:
         pickle.dump(mckm_0, f)
 
-    pickle.load()
-
     print('predicting multi ...')
     with pyckmeans.utils.MultiCKMeansProgressBars(mckm_0) as pb:
         mckm_0_res = mckm_0.predict(x_0, progress_callback=pb.update)
@@ -123,9 +127,9 @@ if __name__ == '__main__':
     print('dbs:', mckm_0_res.dbs)
     print('chs:', mckm_0_res.chs)
 
-    fig = pyckmeans.plot_multickmeans_metrics(mckm_0_res, figsize=(10, 10))
+    fig = mckm_0_res.plot_metrics(figsize=(10, 10))
     fig.savefig(path / f'manual_test_img_metrics0.png')
 
     for k, ckm_res in zip(ks, mckm_0_res.ckmeans_results):
-        fig = pyckmeans.plot_ckmeans_result(ckm_res, figsize=(10, 10))
+        fig = ckm_res.plot(figsize=(10, 10))
         fig.savefig(path / f'manual_test_img_k-{k}.png')

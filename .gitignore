@@ -144,4 +144,5 @@ cython_debug/
 *test*.png
 pyckmeans/tests/*.pickle
 pyckmeans/tests/*.csv
+pyckmeans/tests/*.tsv
 pyckmeans/tests/*.json

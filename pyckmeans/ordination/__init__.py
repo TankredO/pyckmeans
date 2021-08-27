@@ -171,8 +171,7 @@ class PCOAResult:
         Returns
         -------
         Union[numpy.ndarray, pandas.DataFrame]
-            Get eigenvectors, potentially filtered by eigenvalue scores as numpy.ndarray
-            or pandas.DataFrame. The pandas.DataFrame will use names as index, if available.
+            Eigenvectors.
 
         Raises
         ------

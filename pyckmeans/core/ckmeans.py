@@ -1,6 +1,7 @@
 '''ckmeans module'''
 
 from typing import Any, Callable, Dict, Iterable, Optional, Union, Tuple
+import os
 
 import numpy
 import pandas
@@ -106,16 +107,19 @@ class CKmeansResult:
         n-length vector of cluster memberships
     k : float
         number of clusters
-    bic: Optional[float]
+    bic : Optional[float]
         BIC score of the consensus clustering.
-    sil: Optional[float]
+    sil : Optional[float]
         Silhouette score of the consensus clustering.
-    db: Optional[float]
+    db : Optional[float]
         Davies-Bouldin score of the consensus clustering.
-    ch: Optional[float]
+    ch : Optional[float]
         Calinski-Harabasz score of the consensus clustering.
-    names: Optional[Iterable(str)]
+    names : Optional[Iterable(str)]
         Sample names.
+    km_cls : Optional[numpy.ndarray]
+        m*n matrix of predicted cluster memberships for each single K-Means run,
+        where m is the number of single K-Means runs and n is the number samples.
 
     Attributes
     ----------
@@ -135,6 +139,9 @@ class CKmeansResult:
         Davies-Bouldin score of the clustering.
     ch : Optional[float]
         Calinski-Harabasz score of the clustering.
+    km_cls : Optional[numpy.ndarray]
+        m*n matrix of predicted cluster memberships for each single K-Means run,
+        where m is the number of single K-Means runs and n is the number samples.
     '''
     def __init__(
         self,
@@ -146,6 +153,7 @@ class CKmeansResult:
         db: Optional[float] = None,
         ch: Optional[float] = None,
         names: Optional[Iterable[str]] = None,
+        km_cls: Optional[numpy.ndarray] = None,
     ):
         self.cmatrix = consensus_matrix
         self.cl = cluster_membership
@@ -157,6 +165,8 @@ class CKmeansResult:
         self.ch = ch
 
         self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+
+        self.km_cls = km_cls
 
     def order(
         self,
@@ -263,25 +273,37 @@ class CKmeansResult:
             Reordered CKmeansResult
         '''
 
-        if in_place:
-            ckmres = self
-        else:
-            ckmres = CKmeansResult(
-                consensus_matrix=self.cmatrix.copy(),
-                cluster_membership=self.cl.copy(),
-                k=self.k,
-                bic=self.bic,
-                sil=self.sil,
-                db=self.db,
-                ch=self.ch,
-                names=None if self.names is None else self.names.copy(),
-            )
+        ckmres = self if in_place else self.copy()
 
         ckmres.cmatrix = ckmres.cmatrix[order, :][:, order]
         ckmres.cl = ckmres.cl[order]
         ckmres.names = None if ckmres.names is None else ckmres.names[order]
+        ckmres.km_cls = None if ckmres.km_cls is None else ckmres.km_cls[:, order]
 
         return ckmres
+
+    def copy(self) -> 'CKmeansResult':
+        '''copy
+
+        Get a deep copied CKmeansResult.
+
+        Returns
+        -------
+        CKmeansResult
+            A deep copy of self.
+        '''
+
+        return CKmeansResult(
+            consensus_matrix=self.cmatrix.copy(),
+            cluster_membership=self.cl.copy(),
+            k=self.k,
+            bic=self.bic,
+            sil=self.sil,
+            db=self.db,
+            ch=self.ch,
+            names=None if self.names is None else self.names.copy(),
+            km_cls=None if self.km_cls is None else self.km_cls.copy(),
+        )
 
     def plot(
         self,
@@ -326,6 +348,110 @@ class CKmeansResult:
             figsize=figsize,
         )
 
+    def save_km_cls(
+        self,
+        out_file: str,
+        one_hot: bool = False,
+        row_names: bool = False,
+        col_names: bool = False,
+    ):
+        '''save_km_cls
+
+        Save predicted cluster membership for the single K-Means runs to
+        a file. The file format depends on the one_hot parameter.
+
+        Parameters
+        ----------
+        out_file : str
+            Output file path.
+        one_hot : bool
+            If False, a tab-delimited text file will be written containing a n*m cluster
+            membership matrix, where n is the number of K-Means runs and m is the number
+            of samples.
+
+            If True, a file comprising n one-hot encoded m*k cluster membership matrices
+            in tab-delimited text format, separated by an empty line, will be written,
+            where k is the number of clusters.
+        row_names : bool
+            If True, row names will be written.
+        col_names : bool
+            If True, column names will be written.
+        '''
+
+        if one_hot:
+            mapping = numpy.eye(self.k)
+            with open(out_file, 'wb') as out_f:
+                for cl in self.km_cls:
+                    cl_oh_df = pandas.DataFrame(mapping[cl], index=self.names)
+                    cl_oh_df.to_csv(
+                        out_f,
+                        sep='\t',
+                        index=row_names,
+                        header=col_names,
+                        mode='binary',
+                    )
+                    out_f.writelines([bytes(os.linesep, encoding='UTF-8')])
+        else:
+            km_cls_df = pandas.DataFrame(self.km_cls, columns=self.names)
+            km_cls_df.to_csv(out_file, sep='\t', index=row_names, header=col_names)
+
+    def recalculate_cluster_memberships(
+        self,
+        x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
+        linkage_type: str,
+        in_place: bool = False,
+    ) -> 'CKmeansResult':
+        '''recalculate_cluster_memberships
+
+        Recalculate cluster memberships using hierarchical clustering based on the given
+        linkage type.
+
+        Parameters
+        ----------
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
+            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors).
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
+        linkage_type : str
+            Linkage type of the hierarchical clustering that is used for consensus cluster
+            calculation. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        in_place : bool
+            If False, a new, CKmeansResult object will be returned.
+            If True, the object will modified in place and self will be returned.
+
+        Returns
+        -------
+        CKmeansResult
+            CKmeansResult with recalculated cluster memberships.
+        '''
+        ckmres = self if in_place else self.copy()
+
+        if isinstance(x, pyckmeans.ordination.PCOAResult):
+            x = x.vectors
+        elif isinstance(x, pandas.DataFrame):
+            x = x.values
+
+        linkage = hierarchy.linkage(
+            pyckmeans.ordering.condensed_form(1 - ckmres.cmatrix),
+            method=linkage_type,
+        )
+        # fcluster clusters start at one
+        ckmres.cl = hierarchy.fcluster(linkage, ckmres.k, criterion='maxclust') - 1
+
+        ckmres.bic = bic_kmeans(x, ckmres.cl)
+        ckmres.sil = silhouette_score(x, ckmres.cl)
+        ckmres.db = davies_bouldin_score(x, ckmres.cl)
+        ckmres.ch = calinski_harabasz_score(x, ckmres.cl)
+
+        return ckmres
 
 class InvalidClusteringMetric(Exception):
     '''InvalidClusteringMetric
@@ -433,6 +559,7 @@ class CKmeans:
         self,
         x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
         linkage_type: str = 'average',
+        return_cls: bool = False,
         progress_callback: Optional[Callable] = None,
     ) -> CKmeansResult:
         '''predict
@@ -441,7 +568,7 @@ class CKmeans:
 
         Parameters
         ----------
-        x : Union[numpy.ndarray, PCOAResult]
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
             a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors). If x is a
             dataframe, the index will be used a sample names.
@@ -457,6 +584,9 @@ class CKmeans:
             * 'centroid'
 
             See scipy.cluster.hierarchy.linkage for details.
+        return_cls : bool
+            If True, the cluster memberships of the single K-Means runs will be present
+            in the output.
         progress_callback : Optional[Callable]
             Optional callback function for progress reporting.
 
@@ -476,8 +606,14 @@ class CKmeans:
 
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 
+        km_cls = None
+        if return_cls:
+            km_cls = numpy.zeros((self.n_rep, x.shape[0]), dtype=int)
+
         for i, km in enumerate(self.kmeans):
             cl = km.predict(x[:, self.sel_feat[i]])
+            if return_cls:
+                km_cls[i] = cl
             a, b = numpy.meshgrid(cl, cl)
             cmatrix += a == b
 
@@ -508,6 +644,7 @@ class CKmeans:
             db=db,
             ch=ch,
             names=names,
+            km_cls=km_cls,
         )
 
     def _fit(
