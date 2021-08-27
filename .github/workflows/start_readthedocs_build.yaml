@@ -13,4 +13,4 @@ jobs:
     name:
     runs-on: "ubuntu-latest"
     steps:
-      - run: curl -X POST -d "token=${{secrets.READTHEDOCS_TOKEN}} readthedocs.org/api/v2/webhook/pyckmeans/163759/
+      - run: curl -X POST -d "token=${{secrets.READTHEDOCS_TOKEN}}" readthedocs.org/api/v2/webhook/pyckmeans/163759/
