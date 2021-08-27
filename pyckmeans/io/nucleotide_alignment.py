@@ -7,7 +7,7 @@ import os
 from typing import Iterable, Tuple
 
 import numpy
-
+import pyckmeans.distance
 
 # Base encoding as used by R package ape.
 # See http://ape-package.ird.fr/misc/BitLevelCodingScheme.html
@@ -120,7 +120,9 @@ class NucleotideAlignment:
         else:
             return NucleotideAlignment(
                 self.names.copy(),
-                self.sequences[:, ~numpy.all((self.sequences == self.sequences[0,]), axis=0)].copy(),
+                self.sequences[
+                    :, ~numpy.all((self.sequences == self.sequences[0,]), axis=0)
+                ].copy(),
             )
 
     def copy(self) -> 'NucleotideAlignment':
@@ -134,6 +136,39 @@ class NucleotideAlignment:
             Copy of self.
         '''
         return NucleotideAlignment(self.names.copy(), self.sequences.copy())
+
+    def distance(
+        self,
+        distance_type: str = 'p',
+        pairwise_deletion: bool = True,
+    ) -> 'pyckmeans.distance.DistanceMatrix':
+        '''distance
+
+        Calculate genetic distance.
+
+        Parameters
+        ----------
+        distance_type : str, optional
+            Type of genetic distance to calculate, by default 'p'.
+            Available distance types are p-distances ('p'),
+            Jukes-Cantor distances ('jc'), and Kimura 2-paramater distances
+            ('k2p').
+        pairwise_deletion : bool
+            Use pairwise deletion as action to deal with missing data.
+            If False, complete deletion is applied.
+            Gaps ("-", "~", " "), "?", and ambiguous bases are treated as
+            missing data.
+        Returns
+        -------
+        pyckmeans.distance.DistanceMatrix
+            n*n distance matrix.
+        '''
+
+        return pyckmeans.distance.alignment_distance(
+            alignment=self,
+            distance_type=distance_type,
+            pairwise_deletion=pairwise_deletion,
+        )
 
     @property
     def shape(self) -> Tuple[int, int]:

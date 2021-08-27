@@ -1,3 +1,4 @@
+import numpy
 import pandas as pd
 import pytest
 import tempfile
@@ -92,6 +93,12 @@ def test_simple_workflow(prep_phylip_files):
     ckm_2_res_cls_cp_rcm_1 = ckm_2_res_cls_cp.recalculate_cluster_memberships(df, 'average', in_place=False)
     ckm_2_res_cls_cp_rcm_2 = ckm_2_res_cls_cp.recalculate_cluster_memberships(df, 'average', in_place=True)
     assert ckm_2_res_cls_cp_rcm_2 is ckm_2_res_cls_cp
+    assert not ckm_2_res_cls_cp_rcm_1 is ckm_2_res_cls_cp
+
+    # test distance
+    d_0_p_0 = alignment_distance(na_0, 'p')
+    d_0_p_1 = na_0.distance('p')
+    assert numpy.abs(d_0_p_0.dist_mat - d_0_p_1.dist_mat).sum() < 0.001
 
 def test_multi_workflow(prep_pcoa_results):
     pcoares_0: PCOAResult = prep_pcoa_results[0]
