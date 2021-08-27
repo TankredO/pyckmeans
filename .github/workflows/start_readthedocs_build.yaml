@@ -1,0 +1,16 @@
+name: Start readthedocs build
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Start readthedocs build tags'  
+jobs:
+  start-readthedocs-build:
+    name:
+    runs-on: "ubuntu-latest"
+    steps:
+      - run: curl -X POST -d "token=${{secrets.READTHEDOCS_TOKEN}} readthedocs.org/api/v2/webhook/pyckmeans/163759/
