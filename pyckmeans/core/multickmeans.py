@@ -34,7 +34,7 @@ class MultiCKmeansResult:
         self.dbs = numpy.array([ckm_res.db for ckm_res in ckmeans_results])
         self.chs = numpy.array([ckm_res.ch for ckm_res in ckmeans_results])
 
-        self.metric = pandas.DataFrame({
+        self.metrics = pandas.DataFrame({
             'k': self.ks,
             'sil': self.sils,
             'bic': self.bics,
