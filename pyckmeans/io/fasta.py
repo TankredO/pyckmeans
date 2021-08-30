@@ -17,7 +17,10 @@ class InvalidFastaAlignmentError(Exception):
 
 WHITESPACE_RE = re.compile(r'\s+')
 
-def read_fasta_alignment(fasta_file: str) -> NucleotideAlignment:
+def read_fasta_alignment(
+        fasta_file: str,
+        fast_encoding: bool = False,
+    ) -> NucleotideAlignment:
     '''read_fasta_alignment
 
     Read fasta alignment file. This function expects the fasta to be a valid alignment,
@@ -28,6 +31,9 @@ def read_fasta_alignment(fasta_file: str) -> NucleotideAlignment:
     ----------
     fasta_file : str
         Path to a fasta file.
+    fast_encoding : bool
+        If true, a fast nucleotide encoding method without error checking
+        will be used.
 
     Returns
     -------
@@ -82,6 +88,9 @@ def read_fasta_alignment(fasta_file: str) -> NucleotideAlignment:
                 f'(length of sequence #0) but sequence #{i+1} has length {cur_seq_len}.'
             raise InvalidFastaAlignmentError(msg)
 
-    seqs = numpy.array(seqs)
+    if fast_encoding:
+        seqs = numpy.array(seqs, dtype='S')
+    else:
+        seqs = numpy.array(seqs)
 
-    return NucleotideAlignment(names, seqs)
+    return NucleotideAlignment(names, seqs, copy=False, fast_encoding=fast_encoding)

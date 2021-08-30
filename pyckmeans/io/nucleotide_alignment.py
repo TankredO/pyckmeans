@@ -8,6 +8,7 @@ from typing import Iterable, Tuple
 
 import numpy
 import pyckmeans.distance
+from .c_interop import encode_nucleotides
 
 # Base encoding as used by R package ape.
 # See http://ape-package.ird.fr/misc/BitLevelCodingScheme.html
@@ -21,8 +22,8 @@ BASE_ENCODING = {
     # bases
     'A': 0b10001000, 'a': 0b10001000,
     'G': 0b01001000, 'g': 0b01001000,
-    'C': 0b00101000, 't': 0b00101000,
-    'T': 0b00011000, 'c': 0b00011000,
+    'C': 0b00101000, 'c': 0b00101000,
+    'T': 0b00011000, 't': 0b00011000,
     # wobbles
     'R': 0b11000000, 'r': 0b11000000, # A|G
     'M': 0b10100000, 'm': 0b10100000, # A|C
@@ -70,9 +71,20 @@ class NucleotideAlignment:
     sequences : numpy.ndarray
         n*m alignment matrix, where n is the number of entries and m
         is the number of sites.
+    copy : bool
+        If True, sequences will be copied. If false, the NucleotideAlignment
+        will use the original sequences, potentially modifying them.
+    fast_encoding : bool
+        If true, a fast nucleotide encoding method without error checking
+        will be used. ATTENTION: This will modify sequences in place.
     '''
-
-    def __init__(self, names: Iterable[str], sequences: numpy.ndarray):
+    def __init__(
+        self,
+        names: Iterable[str],
+        sequences: numpy.ndarray,
+        copy: bool = False,
+        fast_encoding: bool = False,
+    ):
         # check validity
         n_names = len(names)
         n_seqs = sequences.shape[0]
@@ -83,16 +95,19 @@ class NucleotideAlignment:
 
         # encode strings as uint8, see BASE_ENCODING
         if sequences.dtype != numpy.uint8:
-            try:
-                self.sequences = numpy.array(
-                    [[BASE_ENCODING[n] for n in row] for row in sequences],
-                    dtype=numpy.uint8,
-                )
-            except KeyError as k_err:
-                msg = f'Encountered unknown character in alignment: {str(k_err)}'
-                raise InvalidAlignmentCharacterError(msg) from k_err
+            if fast_encoding:
+                self.sequences = encode_nucleotides(sequences.copy() if copy else sequences)
+            else:
+                try:
+                    self.sequences = numpy.array(
+                        [[BASE_ENCODING[n] for n in row] for row in sequences],
+                        dtype=numpy.uint8,
+                    )
+                except KeyError as k_err:
+                    msg = f'Encountered unknown character in alignment: {str(k_err)}'
+                    raise InvalidAlignmentCharacterError(msg) from k_err
         else:
-            self.sequences = sequences
+            self.sequences = sequences.copy() if copy else sequences
 
     def drop_invariant_sites(self, in_place: bool = False) -> 'NucleotideAlignment':
         '''drop_invariant_sites
@@ -204,12 +219,23 @@ class NucleotideAlignment:
     def from_bp_seqio_records(
         cls,
         records: Iterable['Bio.SeqRecord.SeqRecord'],
+        fast_encoding: bool = False,
     ) -> 'NucleotideAlignment':
         '''from_bp_seqio_records
 
         Build NucleotideAlignment from iterable of Bio.SeqRecord.SeqRecord.
         Such an iterable is, for example, returned by Bio.SeqIO.parse() or
         can be constructed using Bio.Align.MultipleSequenceAlignment().
+
+        Parameters
+        ----------
+        records: Iterable['Bio.SeqRecord.SeqRecord']
+            Iterable of Bio.SeqRecord.SeqRecord.
+            Such an iterable is, for example, returned by Bio.SeqIO.parse() or
+            can be constructed using Bio.Align.MultipleSequenceAlignment().
+        fast_encoding : bool
+            If true, a fast nucleotide encoding method without error checking
+            will be used.
 
         Returns
         -------
@@ -240,10 +266,14 @@ class NucleotideAlignment:
         seqs = numpy.array(seqs)
         names = numpy.array(names)
 
-        return cls(names, seqs)
+        return cls(names, seqs, copy=False, fast_encoding=fast_encoding)
 
     @staticmethod
-    def from_file(file_path: str, file_format='auto') -> 'NucleotideAlignment':
+    def from_file(
+        file_path: str,
+        file_format='auto',
+        fast_encoding=False,
+    ) -> 'NucleotideAlignment':
         '''from_file
 
         Read nucleotide alignment from file.
@@ -255,6 +285,9 @@ class NucleotideAlignment:
         file_format: str
             Alignment file format. Either "auto", "fasta" or "phylip".
             When "auto" the file format will be inferred based on the file extension.
+        fast_encoding : bool
+            If true, a fast nucleotide encoding method without error checking
+            will be used.
 
         Returns
         -------
@@ -282,12 +315,12 @@ class NucleotideAlignment:
         if file_format in ['fasta', 'FASTA']:
             from .fasta import read_fasta_alignment
 
-            return read_fasta_alignment(file_path)
+            return read_fasta_alignment(file_path, fast_encoding=fast_encoding)
 
         elif file_format in ['phylip', 'PHYLIP']:
             from .phylip import read_phylip_alignment
 
-            return read_phylip_alignment(file_path)
+            return read_phylip_alignment(file_path, fast_encoding=fast_encoding)
 
         else:
             msg = f'Unknown aligment file format "{file_format}". ' +\

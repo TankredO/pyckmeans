@@ -14,6 +14,9 @@ def test_simple(prep_fasta_files, prep_phylip_files):
     na_fa_0 = NucleotideAlignment.from_file(prep_fasta_files[0])
     na_fa_1 = NucleotideAlignment.from_file(prep_fasta_files[1])
     na_fa_2 = NucleotideAlignment.from_file(prep_fasta_files[2], 'fasta')
+    na_fa_3 = NucleotideAlignment.from_file(prep_fasta_files[2], 'fasta', fast_encoding=True)
+
+    assert (na_fa_2.sequences == na_fa_3.sequences).all()
 
     print('na_fa_0:', na_fa_0)
     print('na_fa_1:', na_fa_1)
@@ -22,6 +25,9 @@ def test_simple(prep_fasta_files, prep_phylip_files):
     na_phy_0 = NucleotideAlignment.from_file(prep_phylip_files[0])
     na_phy_1 = NucleotideAlignment.from_file(prep_phylip_files[1])
     na_phy_2 = NucleotideAlignment.from_file(prep_phylip_files[2], 'phylip')
+    na_phy_3 = NucleotideAlignment.from_file(prep_phylip_files[2], 'phylip', fast_encoding=True)
+
+    assert (na_phy_2.sequences == na_phy_3.sequences).all()
 
     print('na_phy_0:', na_phy_0)
     print('na_phy_1:', na_phy_1)

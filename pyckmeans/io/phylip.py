@@ -17,7 +17,10 @@ class InvalidPhylipAlignmentError(Exception):
     '''InvalidPhylipAlignmentError
     '''
 
-def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
+def read_phylip_alignment(
+    phylip_file: str,
+    fast_encoding: bool = False,
+) -> NucleotideAlignment:
     '''read_phylip_alignment
 
     Read phylip alignment file. This function expects the phylip to be a valid alignment,
@@ -30,6 +33,9 @@ def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
     ----------
     phylip_file : str
         Path to a phylip file.
+    fast_encoding : bool
+        If true, a fast nucleotide encoding method without error checking
+        will be used.
 
     Returns
     -------
@@ -80,9 +86,12 @@ def read_phylip_alignment(phylip_file: str) -> NucleotideAlignment:
         raise InvalidPhylipAlignmentError(msg)
 
     # construct output
-    seqs = numpy.array(seqs)
+    if fast_encoding:
+        seqs = numpy.array(seqs, dtype='S')
+    else:
+        seqs = numpy.array(seqs)
     try:
-        alignment = NucleotideAlignment(names, seqs)
+        alignment = NucleotideAlignment(names, seqs, copy=False, fast_encoding=fast_encoding)
     except InvalidAlignmentCharacterError as err:
         msg = f'{str(err)}. Possible causes are invalid characters in the ' + \
             'alignment file, or mismatch between header and alignment dimension.'

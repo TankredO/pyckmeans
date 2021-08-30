@@ -37,7 +37,15 @@ distance_module = CTypesExtension(
     sources=['pyckmeans/distance/src/distance.cpp'],
 )
 
-ext_modules = [distance_module]
+nucencode_module = CTypesExtension(
+    'pyckmeans.io.lib.nucencode',
+    sources=['pyckmeans/io/src/nucencode.cpp'],
+)
+
+ext_modules = [
+    distance_module,
+    nucencode_module,
+]
 
 install_requires = [
     'numpy',
