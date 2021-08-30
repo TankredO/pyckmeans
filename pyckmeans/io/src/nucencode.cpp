@@ -5,6 +5,7 @@
 #endif
 
 #include<cstdint>
+#include<cstddef>
 
 /*
  *    Base encoding as used by R package ape.
