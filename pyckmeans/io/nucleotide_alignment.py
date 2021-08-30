@@ -268,8 +268,9 @@ class NucleotideAlignment:
 
         return cls(names, seqs, copy=False, fast_encoding=fast_encoding)
 
-    @staticmethod
+    @classmethod
     def from_file(
+        cls,
         file_path: str,
         file_format='auto',
         fast_encoding=False,
@@ -291,8 +292,8 @@ class NucleotideAlignment:
 
         Returns
         -------
-        NucleotideAlignment
-            NucleotideAlignment instance.
+        Tuple[numpy.ndarray, numpy.ndarray]
+            Tuple of sequences and names, each as numpy array.
 
         Raises
         ------
@@ -315,12 +316,32 @@ class NucleotideAlignment:
         if file_format in ['fasta', 'FASTA']:
             from .fasta import read_fasta_alignment
 
-            return read_fasta_alignment(file_path, fast_encoding=fast_encoding)
+            seqs, names = read_fasta_alignment(
+                file_path,
+                dtype='S' if fast_encoding else 'U',
+            )
+
+            return cls(
+                names=names,
+                sequences=seqs,
+                copy=False,
+                fast_encoding=fast_encoding,
+            )
 
         elif file_format in ['phylip', 'PHYLIP']:
             from .phylip import read_phylip_alignment
 
-            return read_phylip_alignment(file_path, fast_encoding=fast_encoding)
+            seqs, names = read_phylip_alignment(
+                file_path,
+                dtype='S' if fast_encoding else 'U',
+            )
+
+            return cls(
+                names=names,
+                sequences=seqs,
+                copy=False,
+                fast_encoding=fast_encoding,
+            )
 
         else:
             msg = f'Unknown aligment file format "{file_format}". ' +\

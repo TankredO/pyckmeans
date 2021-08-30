@@ -5,11 +5,11 @@
 
 import os
 import re
+from typing import Tuple, Union
 
 import numpy
 
 import pyckmeans.distance
-from .nucleotide_alignment import InvalidAlignmentCharacterError, NucleotideAlignment
 
 WHITESPACE_RE = re.compile(r'\s+')
 
@@ -19,8 +19,8 @@ class InvalidPhylipAlignmentError(Exception):
 
 def read_phylip_alignment(
     phylip_file: str,
-    fast_encoding: bool = False,
-) -> NucleotideAlignment:
+    dtype: Union[str, numpy.dtype] = 'U',
+) -> Tuple[numpy.ndarray, numpy.ndarray]:
     '''read_phylip_alignment
 
     Read phylip alignment file. This function expects the phylip to be a valid alignment,
@@ -33,14 +33,14 @@ def read_phylip_alignment(
     ----------
     phylip_file : str
         Path to a phylip file.
-    fast_encoding : bool
-        If true, a fast nucleotide encoding method without error checking
-        will be used.
+    dtype: Union[str, numpy.dtype]
+        Data type to use for the sequence array.
 
     Returns
     -------
-    NucleotideAlignment
-        Alignment as pyckmeans.io NucleotideAlignment object.
+    Tuple[numpy.ndarray, numpy.ndarray]
+        Tuple of sequences and names, each as numpy array.
+
     Raises
     ------
     InvalidPhylipAlignmentError
@@ -49,8 +49,6 @@ def read_phylip_alignment(
         Raised if less than 2 entries are present in phylip_file.
     InvalidPhylipAlignmentError
         Raised if number of entries does not match header.
-    InvalidAlignmentCharacterError
-        Raised if an invalid character is encountered in the alignment file.
     '''
 
     names = []
@@ -86,17 +84,10 @@ def read_phylip_alignment(
         raise InvalidPhylipAlignmentError(msg)
 
     # construct output
-    if fast_encoding:
-        seqs = numpy.array(seqs, dtype='S')
-    else:
-        seqs = numpy.array(seqs)
-    try:
-        alignment = NucleotideAlignment(names, seqs, copy=False, fast_encoding=fast_encoding)
-    except InvalidAlignmentCharacterError as err:
-        msg = f'{str(err)}. Possible causes are invalid characters in the ' + \
-            'alignment file, or mismatch between header and alignment dimension.'
-        raise InvalidAlignmentCharacterError(msg) from err
-    return alignment
+    seqs = numpy.array(seqs, dtype=dtype)
+    names = numpy.array(names)
+
+    return seqs, names
 
 
 class InvalidPhylipMatrixError(Exception):

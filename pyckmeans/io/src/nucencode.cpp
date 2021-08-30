@@ -76,3 +76,16 @@ LIBRARY_API void encodeNucleotides(
         }
     }
 }
+
+LIBRARY_API void encodeNucleotides_uint32(
+    std::uint32_t* alignment, // nucleotide alignment
+    int n,                    // number of entries
+    int m,                    // number of sites
+    std::uint8_t* alignmentEncoded
+) {
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
+            alignmentEncoded[i * m + j] =  asciiToEncoding[alignment[i * m + j]];
+        }
+    }
+}

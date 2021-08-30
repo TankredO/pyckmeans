@@ -6,10 +6,9 @@
 
 import itertools
 import re
+from typing import Tuple, Union
 
 import numpy
-
-from .nucleotide_alignment import NucleotideAlignment
 
 class InvalidFastaAlignmentError(Exception):
     '''InvalidFastaAlignmentError
@@ -19,8 +18,8 @@ WHITESPACE_RE = re.compile(r'\s+')
 
 def read_fasta_alignment(
         fasta_file: str,
-        fast_encoding: bool = False,
-    ) -> NucleotideAlignment:
+        dtype: Union[str, numpy.dtype] = 'U',
+    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
     '''read_fasta_alignment
 
     Read fasta alignment file. This function expects the fasta to be a valid alignment,
@@ -31,14 +30,13 @@ def read_fasta_alignment(
     ----------
     fasta_file : str
         Path to a fasta file.
-    fast_encoding : bool
-        If true, a fast nucleotide encoding method without error checking
-        will be used.
+    dtype: Union[str, numpy.dtype]
+        Data type to use for the sequence array.
 
     Returns
     -------
-    NucleotideAlignment
-        NucleotideAlignment object.
+    Tuple[numpy.ndarray, numpy.ndarray]
+        Tuple of sequences and names, each as numpy array.
 
     Raises
     ------
@@ -88,9 +86,7 @@ def read_fasta_alignment(
                 f'(length of sequence #0) but sequence #{i+1} has length {cur_seq_len}.'
             raise InvalidFastaAlignmentError(msg)
 
-    if fast_encoding:
-        seqs = numpy.array(seqs, dtype='S')
-    else:
-        seqs = numpy.array(seqs)
+    seqs = numpy.array(seqs, dtype=dtype)
+    names = numpy.array(names)
 
-    return NucleotideAlignment(names, seqs, copy=False, fast_encoding=fast_encoding)
+    return seqs, names
