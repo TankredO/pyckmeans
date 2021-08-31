@@ -7,6 +7,8 @@ from sklearn.cluster import KMeans
 from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any
 from sklearn.metrics import silhouette_samples
 
+import pyckmeans.ordination
+
 # adapted from:
 # https://gist.github.com/wiso/ce2a9919ded228838703c1c7c7dad13b
 # This is equivalent to the loop:
@@ -24,16 +26,44 @@ def _normalize_similarity_matrix(
 
     return sim_mat_norm
 
+class InvalidConstraintsError(Exception):
+    '''InvalidConstraintsError'''
+
 def _prepare_constraints(
     must_link: numpy.ndarray,
     must_not_link: numpy.ndarray,
     names: Union[None, numpy.ndarray],
 ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+    '''_prepare_constraints
+
+    Check and prepare must_link and must_not_link constraints
+    for WECR.
+
+    Parameters
+    ----------
+    must_link : numpy.ndarray
+        Must link constraints.
+    must_not_link : numpy.ndarray
+        Must not link constraints.
+    names : Union[None, numpy.ndarray]
+        Names or None.
+
+    Returns
+    -------
+    Tuple[numpy.ndarray, numpy.ndarray]
+        must link and must not link constraints as n*2 numpy arrays,
+        where rows are constraints and columns a sample indices.
+
+    Raises
+    ------
+    InvalidConstraintsError
+        Raised if an invalid constraints argument is provided.
+    '''
     if must_link.dtype.type == numpy.dtype(str) or must_not_link.dtype.type == numpy.dtype(str):
         if names is None:
-            msg = 'Constraints (must_link, must_not_link) can only contain character strings, ' +\
-                'if names can be inferred from x (pandas.DataFrame, pyckmeans.ordination.PCOAResult).'
-            raise Exception(msg)
+            msg = 'Constraints (must_link, must_not_link) can only contain character strings, if' +\
+                ' names can be inferred from x (pandas.DataFrame, pyckmeans.ordination.PCOAResult).'
+            raise InvalidConstraintsError(msg)
 
     if must_link.dtype.type == numpy.dtype(str):
         ml = numpy.zeros_like(must_link, dtype=int)
@@ -43,10 +73,10 @@ def _prepare_constraints(
 
             if (len(a_idcs)) < 1:
                 msg = f'must_link: Could not find row with name "{a}" in x.'
-                raise Exception(msg)
+                raise InvalidConstraintsError(msg)
             if (len(b_idcs)) < 1:
                 msg = f'must_link: Could not find row with name "{b}" in x.'
-                raise Exception(msg)
+                raise InvalidConstraintsError(msg)
             ml[i] = numpy.array([a_idcs[0][0], b_idcs[0][0]])
     else:
         ml = must_link
@@ -59,10 +89,10 @@ def _prepare_constraints(
 
             if (len(a_idcs)) < 1:
                 msg = f'must_not_link: Could not find row with name "{a}" in x.'
-                raise Exception(msg)
+                raise InvalidConstraintsError(msg)
             if (len(b_idcs)) < 1:
                 msg = f'must_not_link: Could not find row with name "{b}" in x.'
-                raise Exception(msg)
+                raise InvalidConstraintsError(msg)
             mnl[i] = numpy.array([a_idcs[0][0], b_idcs[0][0]])
     else:
         mnl = must_not_link
@@ -70,6 +100,27 @@ def _prepare_constraints(
     return ml, mnl
 
 class WECR:
+    '''WECR K-Means
+
+    A class representing a Weighted Ensemble Consensus of Random K-Means.
+
+    Parameters
+    ----------
+    k : Union[int, Iterable[int]]
+        Number of clusters of drawn from for each K-Means run.
+    n_rep : int, optional
+        Number of K-Means to fit, by default 100
+    p_samp : float, optional
+        Proportion of samples (observations) to randomly draw per K-Means run, by default 0.8.
+        The resulting number of samples will be rounded up. I.e. if number of samples is 10 and
+        p_samp is 0.75, each K-Means will use 8 randomly drawn samples (0.72 * 10 = 7.2, 7.2 -> 8).
+    p_feat : float, optional
+        Proportion of features (predictors) to randomly draw per K-Means run, by default 0.8.
+        The resulting number of features will be rounded up. I.e. if number of features is 10 and
+        p_feat is 0.72, each K-Means will use 8 randomly drawn features (0.72 * 10 = 7.5, 7.2 -> 8).
+    kwargs : Dict[str, Any]
+        Additional keyword arguments passed to sklearn.cluster.KMeans.
+    '''
     def __init__(
         self,
         k: Union[int, Iterable[int]],
@@ -98,13 +149,28 @@ class WECR:
 
     def fit(
         self,
-        x: Union[numpy.ndarray, pandas.DataFrame],
+        x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
         progress_callback: Optional[Callable] = None,
     ):
+        '''fit
+
+        Fit the WECR K-Means.
+
+        Parameters
+        ----------
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
+            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors).
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
+        progress_callback : Optional[Callable]
+            Optional callback function for progress reporting.
+        '''
         self._reset()
 
         if isinstance(x, pandas.DataFrame):
             x = x.values
+        elif isinstance(x, pyckmeans.ordination.PCOAResult):
+            x = x.vectors
 
         # == Fit K-Means
         n_samp = numpy.ceil(self.p_samp * x.shape[0]).astype(int)
@@ -134,20 +200,55 @@ class WECR:
 
     def predict(
         self,
-        x: Union[numpy.ndarray, pandas.DataFrame],
+        x: Union[numpy.ndarray, pandas.DataFrame, pyckmeans.ordination.PCOAResult],
         must_link: Optional[Iterable] = None,
         must_not_link: Optional[Iterable] = None,
         gamma: float = 0.5,
         progress_callback: Optional[Callable] = None,
     ) -> numpy.ndarray:
+        '''predict
+
+        Predict from WECR.
+
+        Parameters
+        ----------
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
+            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors). If x is a
+            dataframe, the index will be used a sample names.
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
+        must_link : Optional[Iterable], optional
+            Must-link constraints. Any 2-dimensional iterable object with constraints as first
+            dimension and sample indices (or names) as second dimension.
+            For example: [[1, 2], [3, 4]], np.array([['A', 'B'], ['A', 'D']])
+            Can be None for no constraints.
+        must_not_link : Optional[Iterable], optional
+            Must-not-link constraints. Any 2-dimensional iterable object with constraints as first
+            dimension and sample indices (or names) as second dimension.
+            For example: [[1, 2], [3, 4]], np.array([['A', 'B'], ['A', 'D']])
+            Can be None for no constraints.
+        gamma : float, optional
+            Weight parameter for the constraints. Must be between 0.0 and 1.0, by default 0.5.
+            Higher values increase the weight of the constraints on the final result.
+        progress_callback : Optional[Callable], optional
+            Optional callback function for progress reporting.
+
+        Returns
+        -------
+        numpy.ndarray
+            n*n weighted co-association matrix.
+        '''
         names = None
         if isinstance(x, pandas.DataFrame):
             names = x.index
             x = x.values
+        elif isinstance(x, pyckmeans.ordination.PCOAResult):
+            names = x.names
+            x = x.vectors
 
         # == prepare constraints
-        must_link = numpy.array(must_link) if must_link is not None else numpy.zeros((0,2))
-        must_not_link = numpy.array(must_not_link) if must_not_link is not None else numpy.zeros((0,2))
+        must_link = numpy.array(must_link) if must_link is not None else numpy.zeros((0, 2))
+        must_not_link = numpy.array(must_not_link) if must_not_link is not None else numpy.zeros((0, 2))
 
         # In the following, the comments will try to map the code as close as possible
         # to the notations given in Lai et al. (2019, "An Adaptive Robust Semi-supervised
@@ -213,7 +314,7 @@ class WECR:
                     # p{ij} = |Mu_{ij}| + |C_{ij}|: number of associated constraints
                     n_constraints_assoc = ml_assoc.shape[0] + mnl_assoc.shape[0]
 
-                    # nu_{ij}: cluster-level consistency 
+                    # nu_{ij}: cluster-level consistency
                     if n_constraints_assoc == 0:
                         cluster_cons = 1.0
                     else:
@@ -260,6 +361,10 @@ class WECR:
         return cmat
 
     def _reset(self):
+        '''_reset
+
+        Reset the internal state of the WECR object.
+        '''
         self.kmeans = None
         self.sel_feat = None
         self.ks = None
