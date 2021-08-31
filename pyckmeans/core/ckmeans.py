@@ -614,7 +614,7 @@ class CKmeans:
             cl = km.predict(x[:, self.sel_feat[i]])
             if return_cls:
                 km_cls[i] = cl
-            a, b = numpy.meshgrid(cl, cl)
+            a, b = numpy.meshgrid(cl, cl) 
             cmatrix += a == b
 
             if progress_callback:
