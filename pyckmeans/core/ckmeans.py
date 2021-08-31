@@ -95,18 +95,14 @@ class CKmeansResult:
 
     Result of CKmeans.predict.
 
-    Contains the members
-    * cmatrix: n * n consensus matrix
-    * cl: n-length vector of cluster memberships
-
     Parameters
     ----------
     consensus_matrix : numpy.ndarray
         n * n consensus matrix.
     cluster_membership : numpy.ndarray
-        n-length vector of cluster memberships
-    k : float
-        number of clusters
+        n-length vector of cluster memberships.
+    k : int
+        number of clusters.
     bic : Optional[float]
         BIC score of the consensus clustering.
     sil : Optional[float]

@@ -1,13 +1,96 @@
 ''' Weighted Ensemble Consensus of Random K-Means (WECR K-Means)
 '''
 
+from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any
+
 import numpy
 import pandas
 from sklearn.cluster import KMeans
-from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any
 from sklearn.metrics import silhouette_samples
+from sklearn.metrics import (
+    silhouette_score,
+    davies_bouldin_score,
+    calinski_harabasz_score,
+)
+from scipy.cluster import hierarchy
 
 import pyckmeans.ordination
+import pyckmeans.ordering
+from pyckmeans.core.ckmeans import bic_kmeans
+
+class WECRResult:
+    '''WECRResult
+
+    Result of WECR.predict.
+
+    Parameters
+    ----------
+    consensus_matrix : numpy.ndarray
+        n * n weighted consensus (co-association) matrix.
+    cluster_membership : numpy.ndarray
+        n * m matrix cluster memberships, where m in the number of different k values.
+    k : Iterable[int]
+        Vector of cluster numbers.
+    bic : Optional[numpy.ndarray]
+        m-length vector of BIC scores of the consensus clustering for each k.
+    sil : Optional[numpy.ndarray]
+        m-length vector of Silhouette scores of the consensus clustering for each k.
+    db : Optional[numpy.ndarray]
+        m-length vector of Davies-Bouldin score of the consensus clustering for each k.
+    ch : Optional[numpy.ndarray]
+        m-length vector of Calinski-Harabasz score of the consensus clustering for each k.
+    names : Optional[Iterable(str)]
+        Sample names.
+    km_cls : Optional[numpy.ndarray]
+        m*n matrix of predicted cluster memberships for each single K-Means run,
+        where m is the number of single K-Means runs and n is the number samples.
+
+    Attributes
+    ----------
+    cmatrix : numpy.ndarray
+        Consensus matrix.
+    cl : numpy.ndarray
+        Cluster memberships for each k.
+    names : Optional[numpy.ndarray]
+        Sample names.
+    k : numpy.ndarray
+        Number of clusters.
+    bic : Optional[numpy.ndarray]
+        Bayesian Information Criterion score of the clustering.
+    sil : Optional[numpy.ndarray]
+        Silhouette scor of the clustering.
+    db : Optional[numpy.ndarray]
+        Davies-Bouldin score of the clustering.
+    ch : Optional[numpy.ndarray]
+        Calinski-Harabasz score of the clustering.
+    km_cls : Optional[numpy.ndarray]
+        m*n matrix of predicted cluster memberships for each single K-Means run,
+        where m is the number of single K-Means runs and n is the number samples.
+    '''
+    def __init__(
+        self,
+        consensus_matrix: numpy.ndarray,
+        cluster_membership: numpy.ndarray,
+        k: Iterable[int],
+        bic: Optional[numpy.ndarray] = None,
+        sil: Optional[numpy.ndarray] = None,
+        db: Optional[numpy.ndarray] = None,
+        ch: Optional[numpy.ndarray] = None,
+        names: Optional[Iterable[str]] = None,
+        km_cls: Optional[numpy.ndarray] = None,
+    ):
+        self.cmatrix = consensus_matrix
+        self.cl = cluster_membership
+        self.k = k
+
+        self.bic = bic
+        self.sil = sil
+        self.db = db
+        self.ch = ch
+
+        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+
+        self.km_cls = km_cls
 
 # adapted from:
 # https://gist.github.com/wiso/ce2a9919ded228838703c1c7c7dad13b
@@ -210,8 +293,11 @@ class WECR:
         must_link: Optional[Iterable] = None,
         must_not_link: Optional[Iterable] = None,
         gamma: float = 0.5,
+        scale_consensus_matrix: bool = True,
+        linkage_type: str = 'average',
+        return_cls: bool = False,
         progress_callback: Optional[Callable] = None,
-    ) -> numpy.ndarray:
+    ) -> WECRResult:
         '''predict
 
         Predict from WECR.
@@ -236,13 +322,32 @@ class WECR:
         gamma : float, optional
             Weight parameter for the constraints. Must be between 0.0 and 1.0, by default 0.5.
             Higher values increase the weight of the constraints on the final result.
+        scale_consensus_matrix : bool
+            If true, the consensus matrix will be scaled in such a way that the diagonal entries
+            are all 1.
+        linkage_type : str
+            Linkage type of the hierarchical clustering that is used for final consensus cluster
+            calculation.
+            
+            One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        return_cls : bool
+            If True, the cluster memberships of the single K-Means runs will be present
+            in the output.
         progress_callback : Optional[Callable], optional
             Optional callback function for progress reporting.
 
         Returns
         -------
-        numpy.ndarray
-            n*n weighted co-association matrix.
+        WECRResult
+            WECRResult object.
         '''
         names = None
         if isinstance(x, pandas.DataFrame):
@@ -277,12 +382,20 @@ class WECR:
         # |M| + |C|: total number of constraints
         n_constraints = ml.shape[0] + mnl.shape[0]
 
-        # == prepare output consensus matrix (co-association matrix)
-        cmat = numpy.zeros((x.shape[0], x.shape[0]))
+        # output consensus matrix (co-association matrix)
+        cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
+
+        km_cls = None
+        if return_cls:
+            km_cls = numpy.zeros((self.n_rep, x.shape[0]), dtype=int)
 
         for i, km in enumerate(self.kmeans):
             cl = km.predict(x[:, self.sel_feat[i]])
             k = self.ks[i]
+
+            if return_cls:
+                km_cls[i] = cl
+
             # H_{i}: cluster membership one-hot encoded (binary membership matrix)
             cl_oh = numpy.eye(k)[cl.reshape(-1)]
 
@@ -300,7 +413,7 @@ class WECR:
                     sil[j] = sil_scores[cl == j].sum() / cluster_size[j]
 
                 # S = HWH^T: weighted consensus matrix (weighted co-association matrix)
-                co_assoc = cl_oh.dot(numpy.diag(sil)).dot(cl_oh.T) 
+                co_assoc = cl_oh.dot(numpy.diag(sil)).dot(cl_oh.T)
 
             # If there are constraints, apply standard algorithm
             else:
@@ -355,16 +468,47 @@ class WECR:
                     weight[j] = sil * consistency
 
                 # S_{i} = H_{i}W_{i}H_{i}^T: weighted consensus matrix (weighted co-association matrix)
-                co_assoc =  cl_oh.dot(numpy.diag(weight)).dot(cl_oh.T)
+                co_assoc = cl_oh.dot(numpy.diag(weight)).dot(cl_oh.T)
 
-            cmat += co_assoc
+            cmatrix += co_assoc
 
             if progress_callback:
                 progress_callback()
 
-        cmat /= self.n_rep
+        cmatrix /= self.n_rep
 
-        return cmat
+        # == prepare output
+        if scale_consensus_matrix:
+            cmatrix = _normalize_similarity_matrix(cmatrix)
+        bic = []
+        sil = []
+        db = []
+        ch = []
+
+        for k in self.k:
+            linkage = hierarchy.linkage(
+                pyckmeans.ordering.condensed_form(1 - cmatrix),
+                method=linkage_type,
+            )
+            # fcluster clusters start at one
+            cl = hierarchy.fcluster(linkage, k, criterion='maxclust') - 1
+
+            bic.append(bic_kmeans(x, cl))
+            sil.append(silhouette_score(x, cl))
+            db.append(davies_bouldin_score(x, cl))
+            ch.append(calinski_harabasz_score(x, cl))
+
+        return WECRResult(
+            consensus_matrix=cmatrix,
+            cluster_membership=None,
+            k=self.k,
+            bic=bic,
+            sil=sil,
+            db=db,
+            ch=ch,
+            names=names,
+            km_cls=km_cls,
+        )
 
     def _reset(self):
         '''_reset
