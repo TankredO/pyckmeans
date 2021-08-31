@@ -1,7 +1,11 @@
 ''' Weighted Ensemble Consensus of Random K-Means (WECR K-Means)
 '''
 
-from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any
+from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import matplotlib
+    import matplotlib.figure
 
 import numpy
 import pandas
@@ -71,7 +75,7 @@ class WECRResult:
         self,
         consensus_matrix: numpy.ndarray,
         cluster_membership: numpy.ndarray,
-        k: Iterable[int],
+        k: numpy.ndarray,
         bic: Optional[numpy.ndarray] = None,
         sil: Optional[numpy.ndarray] = None,
         db: Optional[numpy.ndarray] = None,
@@ -92,12 +96,222 @@ class WECRResult:
 
         self.km_cls = km_cls
 
+    def copy(self) -> 'WECRResult':
+        '''copy
+
+        Get a deep copied WECRResult.
+
+        Returns
+        -------
+        WECRResult
+            A deep copy of self.
+        '''
+
+        return WECRResult(
+            consensus_matrix=self.cmatrix.copy(),
+            cluster_membership=self.cl.copy(),
+            k=self.k.copy(),
+            bic=None if self.bic is None else self.bic.copy(),
+            sil=None if self.sil is None else self.sil.copy(),
+            db=None if self.db is None else self.db.copy(),
+            ch=None if self.ch is None else self.ch.copy(),
+            names=None if self.names is None else self.names.copy(),
+            km_cls=None if self.km_cls is None else self.km_cls.copy(),
+        )
+
+    def order(
+        self,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+    ) -> numpy.ndarray:
+        '''order
+
+        Get optimal sample order according to hierarchical clustering.
+
+        Parameters
+        ----------
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) [1]_ or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+
+        Returns
+        -------
+        numpy.ndarray
+            Optimal sample order.
+
+        References
+        ----------
+        .. [1]  Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+                The British Psychological Society 25.
+        '''
+        return pyckmeans.ordering.distance_order(
+            1 - self.cmatrix,
+            method=method,
+            linkage_type=linkage_type
+        )
+    
+    def reorder(
+        self,
+        order: numpy.ndarray,
+        in_place: bool = False,
+    ) -> 'WECRResult':
+        '''reorder
+
+        Reorder samples according to provided order.
+
+        Parameters
+        ----------
+        order : numpy.ndarray
+            New sample order.
+        in_place : bool
+            If False, a new, sorted WECRResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        WECRResult
+            Reordered WECRResult
+        '''
+
+        wecr_res = self if in_place else self.copy()
+
+        wecr_res.cmatrix = wecr_res.cmatrix[order, :][:, order]
+        wecr_res.cl = wecr_res.cl[:, order]
+        wecr_res.names = None if wecr_res.names is None else wecr_res.names[order]
+        wecr_res.km_cls = None if wecr_res.km_cls is None else wecr_res.km_cls[:, order]
+
+        return wecr_res
+
+    def sort(
+        self,
+        method: str = 'GW',
+        linkage_type: str = 'average',
+        in_place: bool = False,
+    ) -> 'WECRResult':
+        '''sort
+
+        Sort WECRResult using hierarchical clustering.
+
+        Parameters
+        ----------
+        method : str
+            Reordering method. Either 'GW' (Gruvaeus & Wainer, 1972) [1]_ or 'OLO' for
+            scipy.hierarchy.optimal_leaf_ordering.
+
+        linkage_type : str
+            Linkage type for the hierarchical clustering. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        in_place : bool
+            If False, a new, sorted WECRResult object will be returned.
+            If True, the object will be sorted in place and self will be returned.
+
+        Returns
+        -------
+        WECRResult
+            Sorted WECRResult
+
+        References
+        ----------
+        .. [1]  Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+                The British Psychological Society 25.
+        '''
+
+        order = self.order(method=method, linkage_type=linkage_type)
+
+        return self.reorder(order, in_place=in_place)
+
+    def plot(
+        self,
+        k_idx: int,
+        names: Optional[Iterable[str]] = None,
+        order: Optional[Union[str, numpy.ndarray]] = 'GW',
+        cmap_cm: Union[str, 'matplotlib.colors.Colormap'] = 'Blues',
+        cmap_clbar: Union[str, 'matplotlib.colors.Colormap'] = 'tab20',
+        figsize: Tuple[float, float] = (7, 7),
+    ) -> 'matplotlib.figure.Figure':
+        '''plot
+
+        Plot wecr result consensus matrix with consensus clusters.
+
+        Parameters
+        ----------
+        k_idx: int
+            Index of the number of clusters k to use for plotting.
+        names : Optional[Iterable[str]]
+            Sample names to be plotted.
+        order : Optional[Union[str, numpy.ndarray]]
+            Sample Plotting order. Either a string, determining the oder method to use
+            (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
+            or None to apply no reordering.
+        cmap_cm : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the consensus matrix, by default 'Blues'
+        cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the cluster bar, by default 'tab20'
+        figsize : Tuple[float, float], optional
+            Figure size for the matplotlib figure, by default (7, 7).
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib figure.
+        '''
+        from pyckmeans.utils.plotting import plot_wecr_result
+
+        return plot_wecr_result(
+            wecr_res=self,
+            k_idx=k_idx,
+            names=names,
+            order=order,
+            cmap_cm=cmap_cm,
+            cmap_clbar=cmap_clbar,
+            figsize=figsize,
+        )
+
+    def plot_metrics(
+        self,
+        figsize: Tuple[float, float] = (7, 7),
+    ) -> 'matplotlib.figure.Figure':
+        '''plot_metrics
+
+        Plot WECRResult metrics.
+
+        Parameters
+        ----------
+        figsize : Tuple[float, float], optional
+            Figure size for the matplotlib figure, by default (7, 7).
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib Figure of the metrics plot.
+        '''
+
+        from pyckmeans.utils import plot_wecr_result_metrics
+
+        return plot_wecr_result_metrics(
+            wecr_res=self,
+            figsize=figsize,
+        )
+
     # TODO:
-    # - plotting
-    # - order
-    # - sort
-    # - reorder
-    # - copy
     # - save_km_cls
     # - recalculate_cluster_memberships
     # - additional cluster membership calculations
@@ -228,7 +442,7 @@ class WECR:
         p_feat: float = 0.8,
         **kwargs: Dict[str, Any],
     ):
-        self.k = numpy.array(k).reshape(-1)
+        self.k: numpy.ndarray = numpy.array(k).reshape(-1)
         self.n_rep = n_rep
         self.p_samp = p_samp
         self.p_feat = p_feat
@@ -364,7 +578,7 @@ class WECR:
             names = x.index
             x = x.values
         elif isinstance(x, pyckmeans.ordination.PCOAResult):
-            names = x.names
+            names = numpy.array(x.names)
             x = x.vectors
 
         # == prepare constraints
@@ -395,7 +609,7 @@ class WECR:
         # output consensus matrix (co-association matrix)
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
 
-        km_cls = None
+        km_cls: Optional[numpy.ndarray] = None
         if return_cls:
             km_cls = numpy.zeros((self.n_rep, x.shape[0]), dtype=int)
 
@@ -494,6 +708,7 @@ class WECR:
         sil = []
         db = []
         ch = []
+        cluster_membership = []
 
         for k in self.k:
             linkage = hierarchy.linkage(
@@ -502,6 +717,7 @@ class WECR:
             )
             # fcluster clusters start at one
             cl = hierarchy.fcluster(linkage, k, criterion='maxclust') - 1
+            cluster_membership.append(cl)
 
             bic.append(bic_kmeans(x, cl))
             sil.append(silhouette_score(x, cl))
@@ -510,12 +726,12 @@ class WECR:
 
         return WECRResult(
             consensus_matrix=cmatrix,
-            cluster_membership=None,
+            cluster_membership=numpy.array(cluster_membership),
             k=self.k,
-            bic=bic,
-            sil=sil,
-            db=db,
-            ch=ch,
+            bic=numpy.array(bic),
+            sil=numpy.array(sil),
+            db=numpy.array(db),
+            ch=numpy.array(ch),
             names=names,
             km_cls=km_cls,
         )
