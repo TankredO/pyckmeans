@@ -148,8 +148,8 @@ class MultiCKmeansResult:
 
         Returns
         -------
-        CKmeansResult
-            Reordered CKmeansResult
+        MultiCKmeansResult
+            Reordered MultiCKmeansResult
         '''
 
         if in_place:

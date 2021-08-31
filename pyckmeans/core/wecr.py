@@ -92,6 +92,16 @@ class WECRResult:
 
         self.km_cls = km_cls
 
+    # TODO:
+    # - plotting
+    # - order
+    # - sort
+    # - reorder
+    # - copy
+    # - save_km_cls
+    # - recalculate_cluster_memberships
+    # - additional cluster membership calculations
+
 # adapted from:
 # https://gist.github.com/wiso/ce2a9919ded228838703c1c7c7dad13b
 # This is equivalent to the loop:
