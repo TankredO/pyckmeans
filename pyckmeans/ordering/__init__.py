@@ -206,10 +206,7 @@ def reorder_linkage_gw(
 ) -> numpy.ndarray:
     '''reorder_linkage_gw
 
-    Reorder linkage matrix using the algorithm described by Gruvaeus & Wainer (1972).
-
-    Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
-    The British Psychological Society 25.
+    Reorder linkage matrix using the algorithm described by Gruvaeus & Wainer (1972) [1]_.
 
     Parameters
     ----------
@@ -222,6 +219,11 @@ def reorder_linkage_gw(
     -------
     numpy.ndarray
         Reordered linkage matrix.
+
+    References
+    ----------
+    .. [1]  Gruvaeus, G., H., Wainer. 1972. Two Additions to Hierarchical Cluster Analysis.
+            The British Psychological Society 25.
     '''
     linkage = linkage.copy()
 

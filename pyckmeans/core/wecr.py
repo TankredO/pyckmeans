@@ -102,12 +102,12 @@ def _prepare_constraints(
 class WECR:
     '''WECR K-Means
 
-    A class representing a Weighted Ensemble Consensus of Random K-Means.
+    A class representing a Weighted Ensemble Consensus of Random K-Means [1]_.
 
     Parameters
     ----------
     k : Union[int, Iterable[int]]
-        Number of clusters of drawn from for each K-Means run.
+        Number of clusters to drawn from for each K-Means run.
     n_rep : int, optional
         Number of K-Means to fit, by default 100
     p_samp : float, optional
@@ -120,6 +120,12 @@ class WECR:
         p_feat is 0.72, each K-Means will use 8 randomly drawn features (0.72 * 10 = 7.5, 7.2 -> 8).
     kwargs : Dict[str, Any]
         Additional keyword arguments passed to sklearn.cluster.KMeans.
+
+    References
+    ----------
+    .. [1]  Lai, Y., S., He, Z., Lin, F., Yang, Q., Zhou, X., Zhou. 2019.
+            "An Adaptive Robust Semi-Supervised Clustering Framework Using Weighted Consensus of Random K-Means Ensemble".
+            IEEE Transactions on Knowledge and Data Engineering, vol. 33, no. 5, pp. 1877-1890. doi: 10.1109/TKDE.2019.2952596.
     '''
     def __init__(
         self,
@@ -301,8 +307,8 @@ class WECR:
                 # mu_{i}: clustering-level consistency
                 # number of fulfilled constraints divided by total number of constraints
                 clustering_cons = \
-                    (cl[ml[:,0]] == cl[ml[:,1]]).sum() if ml.shape[0] != 0 else 0 +\
-                    (cl[mnl[:,0]] != cl[mnl[:,1]]).sum() if mnl.shape[0] != 0 else 0
+                    (cl[ml[:, 0]] == cl[ml[:,1]]).sum() if ml.shape[0] != 0 else 0 +\
+                    (cl[mnl[:, 0]] != cl[mnl[:,1]]).sum() if mnl.shape[0] != 0 else 0
                 clustering_cons /= n_constraints
 
                 # w{ij}: final cluster weight

@@ -4,6 +4,14 @@ pyckmeans.io package
 Submodules
 ----------
 
+pyckmeans.io.c\_interop module
+------------------------------
+
+.. automodule:: pyckmeans.io.c_interop
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyckmeans.io.csv module
 -----------------------
 

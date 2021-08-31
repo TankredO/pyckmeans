@@ -57,6 +57,8 @@ VALID_DIRECTION = ('increasing', 'decreasing')
 class KneeLocator(object):
     '''KneeLocator
 
+    An implementation of the Kneedle algorithm [1]_.
+
     Once instantiated, this class attempts to find the point of maximum
     curvature on a line. The knee is accessible via the `.knee` attribute.
 
@@ -96,10 +98,10 @@ class KneeLocator(object):
 
     References
     ----------
-    V. Satopaa, J. Albrecht, D. Irwin and B. Raghavan. 2011.
-    "Finding a "Kneedle" in a Haystack: Detecting Knee Points in System Behavior".
-    31st International Conference on Distributed Computing Systems Workshops.
-    doi: 10.1109/ICDCSW.2011.20.
+    .. [1]  Satopaa, V., J., Albrecht, D., Irwin, B., Raghavan. 2011.
+            "Finding a "Kneedle" in a Haystack: Detecting Knee Points in System Behavior".
+            31st International Conference on Distributed Computing Systems Workshops.
+            doi: 10.1109/ICDCSW.2011.20.
     '''
 
     def __init__(
