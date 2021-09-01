@@ -1,6 +1,8 @@
 # pyckmeans
 
-pyckmeans is a Python package for [Consensus K-Means](https://doi.org/10.1023/A:1023949509487) and [Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) clustering, especially in the context of DNA sequence data. In addition to the clustering functionality, it provides tools for working with DNA sequence data such as reading and writing of DNA alignment files, calculating genetic distances, and Principle Coordinate Analysis (PCoA) for dimensionality reduction.
+pyckmeans is a Python package for [Consensus K-Means](https://doi.org/10.1023/A:1023949509487) and [Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) clustering, especially in the context of DNA sequence data. To evaluate the quality of clusterings, pyckmeans implements several internal validation metrics.
+
+In addition to the clustering functionality, it provides tools for working with DNA sequence data such as reading and writing of DNA alignment files, calculating genetic distances, and Principle Coordinate Analysis (PCoA) for dimensionality reduction.
 
 
 ## Consensus K-Means
@@ -44,6 +46,12 @@ pip install .
 
 
 ## Usage
+
+Examples using the Python API:
+- [Consensus K-Means: Clustering a Data Matrix (Single K)](#Consensus-K-Means:-Clustering-a-Data-Matrix-(Single-K))
+- [Consensus K-Means: Clustering a Data Matrix (Multi K)](#Consensus-K-Means:-Clustering-a-Data-Matrix-(Multi-K))
+- [Consensus K-Means: Clustering Sequence Data](#Consensus-K-Means:-Clustering-Sequence-Data)
+- [WECR K-Means: Clustering Sequence Data](#WECR-K-Means:-Clustering-Sequence-Data)
 
 ### Consensus K-Means: Clustering a Data Matrix (Single K)
 
@@ -95,6 +103,9 @@ print('Cluster Membership:', ckm_res.cl)
 
 ### Consensus K-Means: Clustering a Data Matrix (Multi K)
 
+The `MultiCKmeans` class allows to train multiple `CKmeans` objects a once.
+This is, for example, useful for exploring clustering for different values of *k*.
+
 
 ```python
 from pyckmeans import MultiCKMeans
@@ -133,8 +144,8 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
        k       sil         bic        db          ch
     0  2  0.574369  225.092100  0.646401   59.733498
     1  3  0.788207  126.358519  0.302979  387.409107
-    2  4  0.551277  127.717843  1.384464  266.821146
-    3  5  0.333347  128.536692  1.733853  208.976643
+    2  4  0.573809  126.899379  1.097960  271.477817
+    3  5  0.337013  128.148157  1.605308  210.694623
     
 
 
@@ -143,7 +154,7 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
     
 
 
-### Clustering Sequence Data
+### Consensus K-Means: Clustering Sequence Data
 
 
 ```python
@@ -189,7 +200,7 @@ mckm_res.plot_metrics(figsize=(12, 7))
 # Select a 'good' K
 # At k values around 7, BIC, DB, and SIL have a (local) optimum
 ckm_res_k7 = mckm_res.ckmeans_results[5]
-fig = ckm_res_k7.plot(figsize=(10,10))
+fig = ckm_res_k7.plot(figsize=(14,14))
 ```
 
     Nucleotide alignment: <NucleotideAlignment; #samples: 108, #sites: 6752>
@@ -316,7 +327,7 @@ fig = ckm_res_k7.plot(figsize=(10,10))
     
 
 
-### Weighted Ensemble Consensus of Random K-Means (WECR)
+### WECR K-Means: Clustering Sequence Data
 
 
 ```python
@@ -352,7 +363,7 @@ wecr_res = wecr.predict(vectors)
 wecr_res.plot_metrics(figsize=(12, 7))
 
 # Select a 'good' K (e.g., 6, 7, 8) for the consensus clustering
-wecr_res.plot(k=6)
+wecr_res.plot(k=6, figsize=(14,14))
 
 cluster_membership = wecr_res.get_cl(k=6, with_names=True)
 print('cluster_membership:')
