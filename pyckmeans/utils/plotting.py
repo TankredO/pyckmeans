@@ -1,6 +1,7 @@
 ''' Plotting utitlies
 '''
 
+from pyckmeans.core import wecr
 from typing import Iterable, Optional, Tuple, Union
 import numpy
 import matplotlib.pyplot as plt
@@ -152,9 +153,12 @@ def plot_multickmeans_metrics(
 
     return fig
 
+class InvalidKError(Exception):
+    '''InvalidKError'''
+
 def plot_wecr_result(
     wecr_res: pyckmeans.core.WECRResult,
-    k_idx: int,
+    k: int,
     names: Optional[Iterable[str]] = None,
     order: Optional[Union[str, numpy.ndarray]] = 'GW',
     cmap_cm: Union[str, matplotlib.colors.Colormap] = 'Blues',
@@ -169,8 +173,8 @@ def plot_wecr_result(
     ----------
     wecr_res : pyckmeans.core.WECRResult
         WECRResult as returned from pyckmeans.core.WECR.predict.
-    k_idx: int
-        Index of the number of clusters k to use for plotting.
+    k: int
+        The number of clusters k to use for plotting.
     names : Optional[Iterable[str]]
         Sample names to be plotted.
     order : Optional[Union[str, numpy.ndarray]]
@@ -188,6 +192,11 @@ def plot_wecr_result(
     -------
     matplotlib.figure.Figure
         Matplotlib figure.
+
+    Raises
+    ------
+    InvalidKError
+        Raised if an invalid k argument is provided.
     '''
     # if order is None do not reorder
     if order is None:
@@ -198,7 +207,10 @@ def plot_wecr_result(
     # else order must be numpy.ndarray giving the sample order
 
     wecr_res = wecr_res.reorder(order=order, in_place=False)
-    cl = wecr_res.cl[k_idx]
+    if not k in wecr_res.k:
+        msg = f'Result for k={k} not found. Available k are {wecr_res.k}.'
+        raise InvalidKError(msg)
+    cl = wecr_res.cl[numpy.argmax(wecr_res.k == k)]
 
     # if names is passed use names, else try to get names
     # from wecr_res, else just use samples indices

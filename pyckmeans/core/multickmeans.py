@@ -186,10 +186,12 @@ class MultiCKmeansResult:
 
         from pyckmeans.utils import plot_multickmeans_metrics
 
-        return plot_multickmeans_metrics(
+        fig = plot_multickmeans_metrics(
             mckm_res=self,
             figsize=figsize,
         )
+        fig.tight_layout()
+        return fig
 
 class MultiCKMeans:
     '''MultiCKMeans

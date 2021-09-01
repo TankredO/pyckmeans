@@ -13,7 +13,7 @@ __all__ = [
     'pcoa',
 ]
 
-from .core import CKmeans, MultiCKMeans
+from .core import CKmeans, MultiCKMeans, WECR
 from .io import NucleotideAlignment
 from .distance import DistanceMatrix
 from .ordination import pcoa

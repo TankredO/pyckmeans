@@ -1,7 +1,9 @@
 ''' Weighted Ensemble Consensus of Random K-Means (WECR K-Means)
 '''
 
+import os
 from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any, TYPE_CHECKING
+import warnings
 
 if TYPE_CHECKING:
     import matplotlib
@@ -240,7 +242,7 @@ class WECRResult:
 
     def plot(
         self,
-        k_idx: int,
+        k: int,
         names: Optional[Iterable[str]] = None,
         order: Optional[Union[str, numpy.ndarray]] = 'GW',
         cmap_cm: Union[str, 'matplotlib.colors.Colormap'] = 'Blues',
@@ -253,8 +255,8 @@ class WECRResult:
 
         Parameters
         ----------
-        k_idx: int
-            Index of the number of clusters k to use for plotting.
+        k: int
+            The number of clusters k to use for plotting.
         names : Optional[Iterable[str]]
             Sample names to be plotted.
         order : Optional[Union[str, numpy.ndarray]]
@@ -277,7 +279,7 @@ class WECRResult:
 
         return plot_wecr_result(
             wecr_res=self,
-            k_idx=k_idx,
+            k=k,
             names=names,
             order=order,
             cmap_cm=cmap_cm,
@@ -306,14 +308,136 @@ class WECRResult:
 
         from pyckmeans.utils import plot_wecr_result_metrics
 
-        return plot_wecr_result_metrics(
+        fig = plot_wecr_result_metrics(
             wecr_res=self,
             figsize=figsize,
         )
+        fig.tight_layout()
+        return fig
+
+    def save_km_cls(
+        self,
+        out_file: str,
+        one_hot: bool = False,
+        row_names: bool = False,
+        col_names: bool = False,
+    ):
+        '''save_km_cls
+
+        Save predicted cluster membership for the single K-Means runs to
+        a file. The file format depends on the one_hot parameter.
+
+        Parameters
+        ----------
+        out_file : str
+            Output file path.
+        one_hot : bool
+            If False, a tab-delimited text file will be written containing a n*m cluster
+            membership matrix, where n is the number of K-Means runs and m is the number
+            of samples.
+
+            If True, a file comprising n one-hot encoded m*k cluster membership matrices
+            in tab-delimited text format, separated by an empty line, will be written,
+            where k is the number of clusters.
+        row_names : bool
+            If True, row names will be written.
+        col_names : bool
+            If True, column names will be written.
+        '''
+
+        if one_hot:
+            with open(out_file, 'wb') as out_f:
+                for cl in self.km_cls:
+                    mapping = numpy.eye(len(numpy.unique(cl))).astype(int)
+                    cl_oh_df = pandas.DataFrame(mapping[cl], index=self.names)
+                    cl_oh_df.to_csv(
+                        out_f,
+                        sep='\t',
+                        index=row_names,
+                        header=col_names,
+                        mode='binary',
+                    )
+                    out_f.writelines([bytes(os.linesep, encoding='UTF-8')])
+        else:
+            km_cls_df = pandas.DataFrame(self.km_cls, columns=self.names)
+            km_cls_df.to_csv(out_file, sep='\t', index=row_names, header=col_names)
+
+    def recalculate_cluster_memberships(
+        self,
+        x: Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame],
+        linkage_type: str,
+        in_place: bool = False,
+    ) -> 'WECRResult':
+        '''recalculate_cluster_memberships
+
+        ATTENTION: This method may only be used if the WECRResult was not reordered,
+        or if x was reordered the same way as the WECRResult.
+
+        Recalculate cluster memberships using hierarchical clustering based on the given
+        linkage type.
+
+        Parameters
+        ----------
+        x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
+            The data that was used to predict the present WECRResult.
+            A n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            of samples (observations) and m is the number of features (predictors).
+            Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
+        linkage_type : str
+            Linkage type of the hierarchical clustering that is used for consensus cluster
+            calculation. One of
+
+            * 'average'
+            * 'complete'
+            * 'single'
+            * 'weighted'
+            * 'centroid'
+
+            See scipy.cluster.hierarchy.linkage for details.
+        in_place : bool
+            If False, a new, CKmeansResult object will be returned.
+            If True, the object will modified in place and self will be returned.
+
+        Returns
+        -------
+        WECRResult
+            WECRResult with recalculated cluster memberships.
+        '''
+        wecr_res = self if in_place else self.copy()
+
+        if isinstance(x, pyckmeans.ordination.PCOAResult):
+            x = x.vectors
+        elif isinstance(x, pandas.DataFrame):
+            x = x.values
+
+        bic = []
+        sil = []
+        db = []
+        ch = []
+        cluster_membership = []
+        for k in wecr_res.k:
+            linkage = hierarchy.linkage(
+                pyckmeans.ordering.condensed_form(1 - wecr_res.cmatrix),
+                method=linkage_type,
+            )
+            # fcluster clusters start at one
+            cl = hierarchy.fcluster(linkage, k, criterion='maxclust') - 1
+            cluster_membership.append(cl)
+
+            bic.append(bic_kmeans(x, cl))
+            sil.append(silhouette_score(x, cl))
+            db.append(davies_bouldin_score(x, cl))
+            ch.append(calinski_harabasz_score(x, cl))
+
+        wecr_res.bic = numpy.array(bic)
+        wecr_res.sil = numpy.array(sil)
+        wecr_res.db = numpy.array(db)
+        wecr_res.ch = numpy.array(ch)
+        wecr_res.cl = numpy.array(cluster_membership, dtype=int)
+
+        return wecr_res
 
     # TODO:
-    # - save_km_cls
-    # - recalculate_cluster_memberships
     # - additional cluster membership calculations
 
 # adapted from:
@@ -552,7 +676,7 @@ class WECR:
         linkage_type : str
             Linkage type of the hierarchical clustering that is used for final consensus cluster
             calculation.
-            
+
             One of
 
             * 'average'
@@ -575,7 +699,7 @@ class WECR:
         '''
         names = None
         if isinstance(x, pandas.DataFrame):
-            names = x.index
+            names = numpy.array(x.index)
             x = x.values
         elif isinstance(x, pyckmeans.ordination.PCOAResult):
             names = numpy.array(x.names)
@@ -636,7 +760,7 @@ class WECR:
                     cluster_size[j] = (cl == j).sum()
                     sil[j] = sil_scores[cl == j].sum() / cluster_size[j]
 
-                # S = HWH^T: weighted consensus matrix (weighted co-association matrix)
+                # S_{i} = H_{i}W_{i}H_{i}^T: weighted consensus matrix (weighted co-association matrix)
                 co_assoc = cl_oh.dot(numpy.diag(sil)).dot(cl_oh.T)
 
             # If there are constraints, apply standard algorithm
@@ -710,7 +834,8 @@ class WECR:
         ch = []
         cluster_membership = []
 
-        for k in self.k:
+        ks: numpy.ndarray = numpy.unique(self.k)
+        for k in ks:
             linkage = hierarchy.linkage(
                 pyckmeans.ordering.condensed_form(1 - cmatrix),
                 method=linkage_type,
@@ -726,8 +851,8 @@ class WECR:
 
         return WECRResult(
             consensus_matrix=cmatrix,
-            cluster_membership=numpy.array(cluster_membership),
-            k=self.k,
+            cluster_membership=numpy.array(cluster_membership, dtype=int),
+            k=ks,
             bic=numpy.array(bic),
             sil=numpy.array(sil),
             db=numpy.array(db),

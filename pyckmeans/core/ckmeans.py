@@ -375,7 +375,7 @@ class CKmeansResult:
         '''
 
         if one_hot:
-            mapping = numpy.eye(self.k)
+            mapping = numpy.eye(self.k).astype(int)
             with open(out_file, 'wb') as out_f:
                 for cl in self.km_cls:
                     cl_oh_df = pandas.DataFrame(mapping[cl], index=self.names)
@@ -399,13 +399,17 @@ class CKmeansResult:
     ) -> 'CKmeansResult':
         '''recalculate_cluster_memberships
 
+        ATTENTION: This method may only be used if the WECRResult was not reordered,
+        or if x was reordered the same way as the WECRResult. 
+
         Recalculate cluster memberships using hierarchical clustering based on the given
         linkage type.
 
         Parameters
         ----------
         x : Union[numpy.ndarray, pyckmeans.ordination.PCOAResult, pandas.DataFrame]
-            a n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
+            The data that was used to predict the present CKmeansResult.
+            A n * m matrix (numpy.ndarray) or dataframe (pandas.DataFrame), where n is the number
             of samples (observations) and m is the number of features (predictors).
             Alternatively a pyckmeans.ordination.PCOAResult as returned from pyckmeans.pcoa.
         linkage_type : str
@@ -434,6 +438,7 @@ class CKmeansResult:
             x = x.vectors
         elif isinstance(x, pandas.DataFrame):
             x = x.values
+
 
         linkage = hierarchy.linkage(
             pyckmeans.ordering.condensed_form(1 - ckmres.cmatrix),
@@ -597,7 +602,7 @@ class CKmeans:
             names = x.names
             x = x.vectors
         elif isinstance(x, pandas.DataFrame):
-            names = x.index
+            names = numpy.array(x.index)
             x = x.values
 
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))
