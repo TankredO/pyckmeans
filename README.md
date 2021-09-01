@@ -1,7 +1,15 @@
 # pyckmeans
 
-pyckmeans is a Python package for [Consensus K-Means clustering](https://doi.org/10.1023/A:1023949509487), especially in the context of DNA sequence data. In addition to the clustering functionality, it provides tools for working with DNA sequence data such as reading and writing of DNA alignment files, calculating genetic distances, and Principle Coordinate Analysis (PCoA) for dimensionality reduction.
+pyckmeans is a Python package for [Consensus K-Means](https://doi.org/10.1023/A:1023949509487) and [Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) clustering, especially in the context of DNA sequence data. In addition to the clustering functionality, it provides tools for working with DNA sequence data such as reading and writing of DNA alignment files, calculating genetic distances, and Principle Coordinate Analysis (PCoA) for dimensionality reduction.
 
+
+## Consensus K-Means
+
+[Consensus K-Means](https://doi.org/10.1023/A:1023949509487) is an unsupervised ensemble clustering algorithm, combining multiple K-Means clusterings, where each K-Means is trained on a subset of the data (random subset) and a subset of the the features (random subspace). The predicted cluster memberships of the single clusterings are combined to a consensus (or co-association) matrix, determining the number of times each pair of samples was clustered together over all clusterings. This matrix can be interpreted as similarity matrix and can be used to resolve the final consensus clustering by subjecting it to a last clustering step, e.g. hierarchical, or spectral clustering.
+
+## WECR K-Means
+
+[Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) is a semi-supervised ensemble clustering algorithm. Similar to consensus K-Means, it is based on a collection of K-Means clusterings, which are each trained on a random subset of data and a random subspace of features. In addition, for each single clustering the number of clusters *k* is also randomized. This library of clusterings is subjected to weighting function that integrates user-supplied must-link and must-not-link constraints, as well as an internal cluster validation criterion. The constraints represent the semi-supervised component of WECR K-Means: the user can provide prior knowledge considering the composition of the clusters. Must-link and must-not-link constraints imply that a pair of samples (observations, data points) is expected to be found in the same or different clusters, respectively. Based on the clusterings and the calculated weights, a weighted consensus (co-association) matrix is constructed, which is subjected to Cluster-based Similariry Partitioning (CSPA; e.g. hierarchical clustering) or spectral clustering to resolve the consensus clustering.
 
 ## Documentation
 
@@ -37,7 +45,7 @@ pip install .
 
 ## Usage
 
-### Clustering a Data Matrix (Single K)
+### Consensus K-Means: Clustering a Data Matrix (Single K)
 
 
 ```python
@@ -81,11 +89,11 @@ print('Cluster Membership:', ckm_res.cl)
 
 
     
-![png](docs/images/output_4_1.png)
+![png](./docs/images/output_4_1.png)
     
 
 
-### Clustering a Data Matrix (Multi K)
+### Consensus K-Means: Clustering a Data Matrix (Multi K)
 
 
 ```python
@@ -125,13 +133,13 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
        k       sil         bic        db          ch
     0  2  0.574369  225.092100  0.646401   59.733498
     1  3  0.788207  126.358519  0.302979  387.409107
-    2  4  0.577967  127.299348  1.055452  269.192657
-    3  5  0.354507  128.411060  1.456013  209.530690
+    2  4  0.551277  127.717843  1.384464  266.821146
+    3  5  0.333347  128.536692  1.733853  208.976643
     
 
 
     
-![png](docs/images/output_6_1.png)
+![png](./docs/images/output_6_1.png)
     
 
 
@@ -298,12 +306,82 @@ fig = ckm_res_k7.plot(figsize=(10,10))
 
 
     
-![png](docs/images/output_8_2.png)
+![png](./docs/images/output_8_2.png)
     
 
 
 
     
-![png](docs/images/output_8_3.png)
+![png](./docs/images/output_8_3.png)
+    
+
+
+### Weighted Ensemble Consensus of Random K-Means (WECR)
+
+
+```python
+from pyckmeans import WECR, NucleotideAlignment, pcoa
+
+# Load nucleotide alignment
+aln = NucleotideAlignment.from_file('datasets/rhodanthemum_ct85_msl68.snps.phy')
+
+# Calculate Kimura 2-parameter distances
+dst = aln.distance(distance_type='k2p')
+
+# Apply PCoA, including negative Eigentvalue correction
+pcoa_res = pcoa(dst, correction='lingoes')
+
+# Get Eigenvectors until the cumulative corrected Eigenvalues are >= 0.8
+vectors = pcoa_res.get_vectors(
+    filter_by='eigvals_rel_corrected_cum',
+    filter_th=0.8,
+    out_format='pandas'
+)
+
+# Apply WECR K-Means
+wecr = WECR(
+    k=range(2, 20),
+    n_rep=1000,
+    p_samp=0.6,
+    p_feat=0.6,
+)
+wecr.fit(vectors)
+wecr_res = wecr.predict(vectors)
+
+# Plot clustering metrics for each k
+wecr_res.plot_metrics(figsize=(12, 7))
+
+# Select a 'good' K (e.g., 6, 7, 8) for the consensus clustering
+wecr_res.plot(k=6)
+
+cluster_membership = wecr_res.get_cl(k=6, with_names=True)
+print('cluster_membership:')
+print(cluster_membership)
+```
+
+    cluster_membership:
+    PP-R002-01         0
+    PP-R002-01-dupl    0
+    PP-R017-04         4
+    PP-R017-04-dupl    4
+    PP-R019-01         5
+                      ..
+    R044-02            3
+    R044-12            3
+    R045-02            0
+    R045-06            0
+    R045-25            0
+    Length: 108, dtype: int32
+    
+
+
+    
+![png](./docs/images/output_10_1.png)
+    
+
+
+
+    
+![png](./docs/images/output_10_2.png)
     
 

@@ -3,11 +3,6 @@
 
 import os
 from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any, TYPE_CHECKING
-import warnings
-
-if TYPE_CHECKING:
-    import matplotlib
-    import matplotlib.figure
 
 import numpy
 import pandas
@@ -23,6 +18,13 @@ from scipy.cluster import hierarchy
 import pyckmeans.ordination
 import pyckmeans.ordering
 from pyckmeans.core.ckmeans import bic_kmeans
+
+if TYPE_CHECKING:
+    import matplotlib
+    import matplotlib.figure
+
+class InvalidKError(Exception):
+    '''InvalidKError'''
 
 class WECRResult:
     '''WECRResult
@@ -162,7 +164,7 @@ class WECRResult:
             method=method,
             linkage_type=linkage_type
         )
-    
+
     def reorder(
         self,
         order: numpy.ndarray,
@@ -436,6 +438,44 @@ class WECRResult:
         wecr_res.cl = numpy.array(cluster_membership, dtype=int)
 
         return wecr_res
+
+    def get_cl(
+        self,
+        k: int,
+        with_names: bool = False,
+    ) -> Union[numpy.ndarray, pandas.Series]:
+        '''get_cl
+
+        Return cluster memberships at a specified k.
+
+        Parameters
+        ----------
+        k : int
+            Number of clusters to return the cluster memberships for.
+        with_names : bool, optional
+            Return cluster memberships including sample names.
+            If True, a pandas.Series will be returned.
+
+        Returns
+        -------
+        Union[numpy.ndarray, pandas.Series]
+            Cluster memberships
+
+        Raises
+        ------
+        wecr.InvalidKError
+            Raised if an invalid k argument is provided.
+        '''
+
+        if not k in self.k:
+            msg = f'Result for k={k} not found. Available k are {self.k}.'
+            raise InvalidKError(msg)
+
+        cl = self.cl[numpy.argmax(self.k == k)]
+        if with_names:
+            return pandas.Series(cl, self.names)
+        else:
+            return cl
 
     # TODO:
     # - additional cluster membership calculations

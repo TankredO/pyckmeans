@@ -153,9 +153,6 @@ def plot_multickmeans_metrics(
 
     return fig
 
-class InvalidKError(Exception):
-    '''InvalidKError'''
-
 def plot_wecr_result(
     wecr_res: pyckmeans.core.WECRResult,
     k: int,
@@ -195,7 +192,7 @@ def plot_wecr_result(
 
     Raises
     ------
-    InvalidKError
+    wecr.InvalidKError
         Raised if an invalid k argument is provided.
     '''
     # if order is None do not reorder
@@ -209,7 +206,7 @@ def plot_wecr_result(
     wecr_res = wecr_res.reorder(order=order, in_place=False)
     if not k in wecr_res.k:
         msg = f'Result for k={k} not found. Available k are {wecr_res.k}.'
-        raise InvalidKError(msg)
+        raise wecr.InvalidKError(msg)
     cl = wecr_res.cl[numpy.argmax(wecr_res.k == k)]
 
     # if names is passed use names, else try to get names
