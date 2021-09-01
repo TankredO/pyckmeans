@@ -328,7 +328,7 @@ fig = ckm_res_k7.plot(figsize=(14,14))
     
 
 
-<h3 id="ckmeans-sequence">WECR K-Means: Clustering Sequence Data</h3>
+<h3 id="wecr-sequence">WECR K-Means: Clustering Sequence Data</h3>
 
 
 ```python
