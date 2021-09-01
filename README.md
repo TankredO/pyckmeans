@@ -48,12 +48,13 @@ pip install .
 ## Usage
 
 Examples using the Python API:
-- [Consensus K-Means: Clustering a Data Matrix (Single K)](#Consensus-K-Means:-Clustering-a-Data-Matrix-(Single-K))
-- [Consensus K-Means: Clustering a Data Matrix (Multi K)](#Consensus-K-Means:-Clustering-a-Data-Matrix-(Multi-K))
-- [Consensus K-Means: Clustering Sequence Data](#Consensus-K-Means:-Clustering-Sequence-Data)
-- [WECR K-Means: Clustering Sequence Data](#WECR-K-Means:-Clustering-Sequence-Data)
+- [Consensus K-Means: Clustering a Data Matrix (Single K)](#ckmeans-data-single)
+- [Consensus K-Means: Clustering a Data Matrix (Multi K)](#ckmeans-data-multi)
+- [Consensus K-Means: Clustering Sequence Data](#ckmeans-sequence-multi)
+- [WECR K-Means: Clustering Sequence Data](#wecr-sequence)
 
-### Consensus K-Means: Clustering a Data Matrix (Single K)
+
+<h3 id="ckmeans-data-single">Consensus K-Means: Clustering a Data Matrix (Single K)</h3>
 
 
 ```python
@@ -101,7 +102,7 @@ print('Cluster Membership:', ckm_res.cl)
     
 
 
-### Consensus K-Means: Clustering a Data Matrix (Multi K)
+<h3 id="ckmeans-data-multi">Consensus K-Means: Clustering a Data Matrix (Multi K)</h3>
 
 The `MultiCKmeans` class allows to train multiple `CKmeans` objects a once.
 This is, for example, useful for exploring clustering for different values of *k*.
@@ -144,8 +145,8 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
        k       sil         bic        db          ch
     0  2  0.574369  225.092100  0.646401   59.733498
     1  3  0.788207  126.358519  0.302979  387.409107
-    2  4  0.573809  126.899379  1.097960  271.477817
-    3  5  0.337013  128.148157  1.605308  210.694623
+    2  4  0.563343  126.979355  1.214520  271.019424
+    3  5  0.339466  128.061382  1.698652  211.080143
     
 
 
@@ -154,7 +155,7 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
     
 
 
-### Consensus K-Means: Clustering Sequence Data
+<h3 id="ckmeans-sequence-multi">Consensus K-Means: Clustering Sequence Data</h3>
 
 
 ```python
@@ -327,7 +328,7 @@ fig = ckm_res_k7.plot(figsize=(14,14))
     
 
 
-### WECR K-Means: Clustering Sequence Data
+<h3 id="ckmeans-sequence">WECR K-Means: Clustering Sequence Data</h3>
 
 
 ```python
