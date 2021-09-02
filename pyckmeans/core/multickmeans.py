@@ -1,11 +1,15 @@
 '''multickmeans module'''
 
-from typing import List, Optional, Iterable, Dict, Any, Tuple, Union, Callable
+from typing import List, Optional, Iterable, Dict, Any, Tuple, Union, Callable, TYPE_CHECKING
 import numpy
 import pandas
 
 from pyckmeans.ordination import PCOAResult
 from .ckmeans import CKmeansResult, CKmeans, InvalidClusteringMetric
+
+if TYPE_CHECKING:
+    import matplotlib
+    import matplotlib.figure
 
 class MultiCKmeansResult:
     '''MultiCKmeansResult
@@ -25,7 +29,8 @@ class MultiCKmeansResult:
         names: Optional[Iterable[str]] = None,
     ):
         self.ckmeans_results = ckmeans_results
-        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+        self.names = numpy.arange(ckmeans_results[0].cmatrix.shape[0]).astype(str) \
+            if names is None else numpy.array(names).astype(str)
 
         self.ks = numpy.array([ckm_res.k for ckm_res in ckmeans_results])
 

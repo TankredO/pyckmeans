@@ -65,6 +65,7 @@ def test_simple_workflow(prep_phylip_files):
     ckm_1.fit(pcoares_0)
     ckm_1_res = ckm_1.predict(pcoares_0)
     ckm_1_res.sort(in_place=True)
+    ckm_1_res.recalculate_cluster_memberships(pcoares_0, linkage_type='complete')
 
     print('ckm_1_res.cl:', ckm_1_res.cl)
     print('ckm_1_res.names:', ckm_1_res.names)

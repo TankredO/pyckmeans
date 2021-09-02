@@ -2,6 +2,7 @@
 '''
 
 import os
+import json
 from typing import Union, Optional, Iterable, Callable, Tuple, Dict, Any, TYPE_CHECKING
 
 import numpy
@@ -18,6 +19,7 @@ from scipy.cluster import hierarchy
 import pyckmeans.ordination
 import pyckmeans.ordering
 from pyckmeans.core.ckmeans import bic_kmeans
+from .utils import NumpyEncoder
 
 if TYPE_CHECKING:
     import matplotlib
@@ -34,9 +36,11 @@ class WECRResult:
     Parameters
     ----------
     consensus_matrix : numpy.ndarray
-        n * n weighted consensus (co-association) matrix.
+        n * n weighted consensus (co-association) matrix, where n is the number of
+        samples (observations, data points)
     cluster_membership : numpy.ndarray
-        n * m matrix cluster memberships, where m in the number of different k values.
+        m * n matrix cluster memberships, where m in the number of different k values and
+        n is the number of samples (observations, data points)
     k : Iterable[int]
         Vector of cluster numbers.
     bic : Optional[numpy.ndarray]
@@ -96,7 +100,8 @@ class WECRResult:
         self.db = db
         self.ch = ch
 
-        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+        self.names = numpy.arange(consensus_matrix.shape[0]).astype(str) \
+            if names is None else numpy.array(names).astype(str)
 
         self.km_cls = km_cls
 
@@ -476,6 +481,300 @@ class WECRResult:
             return pandas.Series(cl, self.names)
         else:
             return cl
+
+    def to_dict(
+        self,
+    ) -> Dict:
+        '''to_dict
+
+        Convert WECRResult to dictionary.
+
+        Returns
+        -------
+        Dict
+            WECRResult as dictionary.
+        '''
+
+        return {
+            'cmatrix': self.cmatrix,
+            'cl': self.cl,
+            'k': self.k,
+            'bic': self.bic,
+            'sil': self.sil,
+            'db': self.db,
+            'ch': self.ch,
+            'names': self.names,
+            'km_cls': self.km_cls,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        wecr_res_dict: Dict,
+    ) -> 'WECRResult':
+        '''from_dict
+
+        Construct WECRResult from dictionary.
+
+        Parameters
+        ----------
+        wecr_res_dict : Dict
+            WECRResult as dictionary.
+
+        Returns
+        -------
+        WECRResult
+            WECRResult
+        '''
+        return cls(
+            consensus_matrix=wecr_res_dict['cmatrix'],
+            cluster_membership=wecr_res_dict['cl'],
+            k=wecr_res_dict['k'],
+            bic=wecr_res_dict['bic'],
+            sil=wecr_res_dict['sil'],
+            db=wecr_res_dict['db'],
+            ch=wecr_res_dict['ch'],
+            names=wecr_res_dict['names'],
+            km_cls=wecr_res_dict['km_cls'],
+        )
+
+    def to_json(
+        self,
+        file: Optional[str] = None,
+        **kwargs: Dict[str, Any],
+    ) -> Optional[str]:
+        '''to_json
+
+        Convert WECRResult to JSON string or file.
+
+        Parameters
+        ----------
+        file : Optional[str], optional
+            File path to write the WECRResult to or None.
+            If None, the JSON string will be returned.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.dump or json.dumps.
+
+        Returns
+        -------
+        Optional[str]
+            None or JSON string.
+        '''
+        wecr_res_dict = self.to_dict()
+        if file is None:
+            return json.dumps(wecr_res_dict, cls=NumpyEncoder, **kwargs)
+        else:
+            with open(file, 'w') as json_f:
+                json.dump(wecr_res_dict, json_f, cls=NumpyEncoder, **kwargs)
+
+        return None
+
+
+    @classmethod
+    def from_json_str(
+        cls,
+        json_str: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'WECRResult':
+        '''from_json_str
+
+        Construct WECRResult from JSON string.
+
+        Parameters
+        ----------
+        json_str: str
+            JSON string.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+
+        Returns
+        -------
+        WECRResult
+            WECRResult
+        '''
+        json_dict = json.loads(json_str, **kwargs)
+
+        json_dict['cmatrix'] = numpy.array(json_dict['cmatrix'])
+        json_dict['cl'] = numpy.array(json_dict['cl'], dtype=int)
+        json_dict['names'] = \
+            numpy.array(json_dict['names']) if not json_dict['names'] is None else None
+        json_dict['km_cls'] = \
+            numpy.array(json_dict['km_cls'], dtype=int) if not json_dict['km_cls'] is None \
+            else None
+        json_dict['bic'] = \
+            numpy.array(json_dict['bic']) if not json_dict['bic'] is None else None
+        json_dict['db'] = \
+            numpy.array(json_dict['db']) if not json_dict['db'] is None else None
+        json_dict['sil'] = \
+            numpy.array(json_dict['sil']) if not json_dict['sil'] is None else None
+        json_dict['ch'] = \
+            numpy.array(json_dict['ch']) if not json_dict['ch'] is None else None
+
+        return cls.from_dict(json_dict)
+
+    @classmethod
+    def from_json(
+        cls,
+        file: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'WECRResult':
+        '''from_json
+
+        Construct WECRResult from JSON file.
+
+        Parameters
+        ----------
+        file : str
+            JSON file
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+        Returns
+        -------
+        WECRResult
+            WECRResult
+        '''
+        with open(file, 'r') as json_f:
+            json_string = json_f.read()
+
+        return cls.from_json_str(json_string, **kwargs)
+
+    def to_dir(
+        self,
+        out_dir: str,
+        force: bool = False,
+    ):
+        '''to_dir
+
+        Save WECRResult to directory.
+        The directory will contain the three files 'cmatrix.csv', comprising the consensus matrix,
+        'clusters.csv', comprising the consensus cluster memberships, and 'metrics.csv', comprising
+        the clustering metrics.
+        If the WECRResult contains clustering information considering the single K-Means runs,
+        those will be written to 'km_clusters.csv'.
+
+        Parameters
+        ----------
+        out_dir : str
+            Output directory. Will be created if it does not exist.
+        force : bool, optional
+            Write into out_dir even if it does already exist, by default False.
+
+        Raises
+        ------
+        Exception
+            Raised if there is a problem with out_dir.
+        '''
+        if os.path.exists(out_dir):
+            if not force:
+                msg = f'Output directory "{out_dir}" already exists.'
+                raise Exception(msg)
+        else:
+            os.mkdir(out_dir)
+
+        cmatrix_file = os.path.join(out_dir, 'cmatrix.csv')
+        cmatrix_df = pandas.DataFrame(
+            self.cmatrix,
+            index=self.names,
+            columns=self.names,
+        )
+        cmatrix_df.index.name = 'sample'
+        cmatrix_df.to_csv(cmatrix_file, index=True, header=True)
+
+        cl_file = os.path.join(out_dir, 'clusters.csv')
+        cl_df = pandas.DataFrame(
+            self.cl,
+            index=self.k,
+            columns=self.names,
+        )
+        cl_df.to_csv(cl_file, index=True, header=True)
+
+        metrics_file = os.path.join(out_dir, 'metrics.csv')
+        metrics_df = pandas.DataFrame(
+            {
+                'bic': self.bic,
+                'db': self.db,
+                'sil': self.sil,
+                'ch': self.ch,
+            },
+            index=self.k,
+        )
+        metrics_df.to_csv(metrics_file, index=True, header=True)
+
+        if not self.km_cls is None:
+            km_cls_file = os.path.join(out_dir, 'km_clusters.csv')
+            km_cls_df = pandas.DataFrame(
+                self.km_cls,
+                columns=self.names,
+                index=[f'KM{n}' for n in range(self.km_cls.shape[0])],
+            )
+            km_cls_df.to_csv(km_cls_file, index=True, header=True)
+
+    @classmethod
+    def from_dir(
+        cls,
+        directory: str,
+    ) -> 'WECRResult':
+        '''from_dir
+
+        Construct WECRResult from a directory contraining the three files 'cmatrix.csv',
+        'clusters.csv', 'metrics.csv', and optionally 'km_clusters.csv'.
+        See :func:`<pyckmeans.core.wecr.WECRResult.to_dir>`.
+
+        Parameters
+        ----------
+        directory : str
+            WECRResult directory.
+
+        Returns
+        -------
+        WECRResult
+            WECRResult
+
+        Raises
+        ------
+        Exception
+            Raised if there is a problem with directory.
+        '''
+        if not os.path.exists(directory) or not os.path.isdir(directory):
+            msg = f'Could not find directory at "{directory}".'
+            raise Exception(msg)
+
+        cmatrix_file = os.path.join(directory, 'cmatrix.csv')
+        cmatrix = pandas.read_csv(cmatrix_file, header=0, index_col=0).values
+
+        cl_file = os.path.join(directory, 'clusters.csv')
+        cl_df = pandas.read_csv(cl_file, header=0, index_col=0)
+        cl = cl_df.values
+        names = numpy.array(cl_df.columns).astype(str)
+        k = numpy.array(cl_df.index, dtype=int)
+
+        metrics_file = os.path.join(directory, 'metrics.csv')
+        metrics_df = pandas.read_csv(metrics_file, header=0, index_col=0)
+        bic = metrics_df['bic'].values
+        bic = bic if not numpy.isnan(bic[0]) else None
+        db = metrics_df['db'].values
+        db = db if not numpy.isnan(db[0]) else None
+        sil = metrics_df['sil'].values
+        sil = sil if not numpy.isnan(sil[0]) else None
+        ch = metrics_df['ch'].values
+        ch = ch if not numpy.isnan(ch[0]) else None
+
+        km_cls_file = os.path.join(directory, 'km_clusters.csv')
+        km_cls = None
+        if os.path.exists(km_cls_file):
+            km_cls = pandas.read_csv(km_cls_file, index_col=0, header=0).values
+
+        return cls(
+            consensus_matrix=cmatrix,
+            cluster_membership=cl,
+            k=k,
+            names=names,
+            bic=bic,
+            db=db,
+            sil=sil,
+            ch=ch,
+            km_cls=km_cls,
+        )
 
     # TODO:
     # - additional cluster membership calculations
@@ -880,6 +1179,11 @@ class WECR:
                 pyckmeans.ordering.condensed_form(1 - cmatrix),
                 method=linkage_type,
             )
+
+            # cluster distance can become negative due to floating point
+            # errors.
+            linkage[numpy.abs(linkage) < 1e-8] = 0
+
             # fcluster clusters start at one
             cl = hierarchy.fcluster(linkage, k, criterion='maxclust') - 1
             cluster_membership.append(cl)

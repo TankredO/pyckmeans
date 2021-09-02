@@ -168,7 +168,8 @@ class CKmeansResult:
         self.db = db
         self.ch = ch
 
-        self.names = numpy.arange(consensus_matrix.shape[0]) if names is None else numpy.array(names)
+        self.names = numpy.arange(consensus_matrix.shape[0]).astype(str) \
+            if names is None else numpy.array(names).astype(str)
 
         self.km_cls = km_cls
 
@@ -452,6 +453,10 @@ class CKmeansResult:
             pyckmeans.ordering.condensed_form(1 - ckmres.cmatrix),
             method=linkage_type,
         )
+        # cluster distance can become negative due to floating point
+        # errors.
+        linkage[numpy.abs(linkage) < 1e-8] = 0.0
+
         # fcluster clusters start at one
         ckmres.cl = hierarchy.fcluster(linkage, ckmres.k, criterion='maxclust') - 1
 
@@ -714,7 +719,7 @@ class CKmeansResult:
         cl_file = os.path.join(directory, 'clusters.csv')
         cl_df = pandas.read_csv(cl_file, header=0, index_col=0)['cl']
         cl = cl_df.values
-        names = numpy.array(cl_df.index)
+        names = numpy.array(cl_df.index).astype(str)
 
         metrics_file = os.path.join(directory, 'metrics.csv')
         metrics_df = pandas.read_csv(metrics_file, header=0, index_col=None)
