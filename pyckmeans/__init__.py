@@ -3,7 +3,7 @@
     pyckmeans, a Python package for Consensus K-Means clustering.
 '''
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 __all__ = [
     'CKmeans',

@@ -310,7 +310,7 @@ class PCOAResult:
         Raises
         ------
         Exception
-            Raised if there is a prbolem with out_dir.
+            Raised if there is a problem with out_dir.
         '''
         if os.path.exists(out_dir):
             if not force:

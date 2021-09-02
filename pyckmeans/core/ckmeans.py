@@ -1,7 +1,9 @@
 '''ckmeans module'''
 
-from typing import Any, Callable, Dict, Iterable, Optional, Union, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Union, Tuple, TYPE_CHECKING
 import os
+import json
+from _pytest.config import cmdline
 
 import numpy
 import pandas
@@ -15,6 +17,12 @@ from scipy.cluster import hierarchy
 
 import pyckmeans.ordination
 import pyckmeans.ordering
+
+from .utils import NumpyEncoder
+
+if TYPE_CHECKING:
+    import matplotlib
+    import matplotlib.figure
 
 # Could get this directly from sklearn.cluster.KMeans.inertia_,
 # but will keep this for flexibility. wss results and inertia_ values
@@ -160,7 +168,7 @@ class CKmeansResult:
         self.db = db
         self.ch = ch
 
-        self.names: Optional[numpy.ndarray] = None if names is None else numpy.array(names)
+        self.names = numpy.arange(consensus_matrix.shape[0]) if names is None else numpy.array(names)
 
         self.km_cls = km_cls
 
@@ -453,6 +461,288 @@ class CKmeansResult:
         ckmres.ch = calinski_harabasz_score(x, ckmres.cl)
 
         return ckmres
+
+    def to_dict(
+        self,
+    ) -> Dict:
+        '''to_dict
+
+        Convert CKmeansResult to dictionary.
+
+        Returns
+        -------
+        Dict
+            CKmeansResult as dictionary.
+        '''
+
+        return {
+            'cmatrix': self.cmatrix,
+            'cl': self.cl,
+            'k': self.k,
+            'bic': self.bic,
+            'sil': self.sil,
+            'db': self.db,
+            'ch': self.ch,
+            'names': self.names,
+            'km_cls': self.km_cls,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        ckm_res_dict: Dict,
+    ) -> 'CKmeansResult':
+        '''from_dict
+
+        Construct CKmeansResult from dictionary.
+
+        Parameters
+        ----------
+        ckm_res_dict : Dict
+            CKmeansResult as dictionary.
+
+        Returns
+        -------
+        CKmeansResult
+            CKmeansResult
+        '''
+        return cls(
+            consensus_matrix=ckm_res_dict['cmatrix'],
+            cluster_membership=ckm_res_dict['cl'],
+            k=ckm_res_dict['k'],
+            bic=ckm_res_dict['bic'],
+            sil=ckm_res_dict['sil'],
+            db=ckm_res_dict['db'],
+            ch=ckm_res_dict['ch'],
+            names=ckm_res_dict['names'],
+            km_cls=ckm_res_dict['km_cls'],
+        )
+
+    def to_json(
+        self,
+        file: Optional[str] = None,
+        **kwargs: Dict[str, Any],
+    ) -> Optional[str]:
+        '''to_json
+
+        Convert CKmeansResult to JSON string or file.
+
+        Parameters
+        ----------
+        file : Optional[str], optional
+            File path to write the CKmeansResult to or None.
+            If None, the JSON string will be returned.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.dump or json.dumps.
+
+        Returns
+        -------
+        Optional[str]
+            None or JSON string.
+        '''
+        ckm_res_dict = self.to_dict()
+        if file is None:
+            return json.dumps(ckm_res_dict, cls=NumpyEncoder, **kwargs)
+        else:
+            with open(file, 'w') as json_f:
+                json.dump(ckm_res_dict, json_f, cls=NumpyEncoder, **kwargs)
+
+        return None
+
+
+    @classmethod
+    def from_json_str(
+        cls,
+        json_str: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'CKmeansResult':
+        '''from_json_str
+
+        Construct CKmeansResult from JSON string.
+
+        Parameters
+        ----------
+        json_str: str
+            JSON string.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+
+        Returns
+        -------
+        CKmeansResult
+            CKmeansResult
+        '''
+        json_dict = json.loads(json_str, **kwargs)
+
+        json_dict['cmatrix'] = numpy.array(json_dict['cmatrix'])
+        json_dict['cl'] = numpy.array(json_dict['cl'], dtype=int)
+        json_dict['names'] = \
+            numpy.array(json_dict['names']) if not json_dict['names'] is None else None
+        json_dict['km_cls'] = \
+             numpy.array(json_dict['km_cls'], dtype=int) if not json_dict['km_cls'] is None else None
+
+        return cls.from_dict(json_dict)
+
+    @classmethod
+    def from_json(
+        cls,
+        file: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'CKmeansResult':
+        '''from_json
+
+        Construct CKmeansResult from JSON file.
+
+        Parameters
+        ----------
+        file : str
+            JSON file
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+        Returns
+        -------
+        CKmeansResult
+            CKmeansResult
+        '''
+        with open(file, 'r') as json_f:
+            json_string = json_f.read()
+
+        return cls.from_json_str(json_string, **kwargs)
+
+    def to_dir(
+        self,
+        out_dir: str,
+        force: bool = False,
+    ):
+        '''to_dir
+
+        Save CKmeansResult to directory.
+        The directory will contain the three files 'cmatrix.csv', comprising the consensus matrix,
+        'clusters.csv', comprising the consensus cluster membership, and 'metrics.csv', comprising
+        the clustering metrics.
+        If the CKmeansResult contains clustering information considering the single K-Means runs,
+        those will be written to 'km_clusters.csv'.
+
+        Parameters
+        ----------
+        out_dir : str
+            Output directory. Will be created if it does not exist.
+        force : bool, optional
+            Write into out_dir even if it does already exist, by default False.
+
+        Raises
+        ------
+        Exception
+            Raised if there is a problem with out_dir.
+        '''
+        if os.path.exists(out_dir):
+            if not force:
+                msg = f'Output directory "{out_dir}" already exists.'
+                raise Exception(msg)
+        else:
+            os.mkdir(out_dir)
+
+        cmatrix_file = os.path.join(out_dir, 'cmatrix.csv')
+        cmatrix_df = pandas.DataFrame(
+            self.cmatrix,
+            index=self.names,
+            columns=self.names,
+        )
+        cmatrix_df.index.name = 'sample'
+        cmatrix_df.to_csv(cmatrix_file, index=True, header=True)
+
+        cl_file = os.path.join(out_dir, 'clusters.csv')
+        cl_df = pandas.DataFrame(
+            {'cl': self.cl},
+            index=self.names,
+        )
+        cl_df.to_csv(cl_file, index=True, header=True)
+
+        metrics_file = os.path.join(out_dir, 'metrics.csv')
+        metrics_df = pandas.DataFrame(
+            {
+                'bic': [self.bic],
+                'db': [self.db],
+                'sil': [self.sil],
+                'ch': [self.ch],
+            },
+        )
+        metrics_df.to_csv(metrics_file, index=False, header=True)
+
+        if not self.km_cls is None:
+            km_cls_file = os.path.join(out_dir, 'km_clusters.csv')
+            km_cls_df = pandas.DataFrame(
+                self.km_cls,
+                columns=self.names,
+                index=[f'KM{n}' for n in range(self.km_cls.shape[0])],
+            )
+            km_cls_df.to_csv(km_cls_file, index=True, header=True)
+
+    @classmethod
+    def from_dir(
+        cls,
+        directory: str,
+    ) -> 'CKmeansResult':
+        '''from_dir
+
+        Construct CKmeansResult from a directory contraining the three files 'cmatrix.csv',
+        'clusters.csv', 'metrics.csv', and optionally 'km_clusters.csv'.
+        See :func:`<pyckmeans.core.ckmeans.CKmeansResult.to_dir>`.
+
+        Parameters
+        ----------
+        directory : str
+            CKmeansResult directory.
+
+        Returns
+        -------
+        CKmeansResult
+            CKmeansResult
+
+        Raises
+        ------
+        Exception
+            Raised if there is a problem with directory.
+        '''
+        if not os.path.exists(directory) or not os.path.isdir(directory):
+            msg = f'Could not find directory at "{directory}".'
+            raise Exception(msg)
+
+        cmatrix_file = os.path.join(directory, 'cmatrix.csv')
+        cmatrix = pandas.read_csv(cmatrix_file, header=0, index_col=0).values
+
+        cl_file = os.path.join(directory, 'clusters.csv')
+        cl_df = pandas.read_csv(cl_file, header=0, index_col=0)['cl']
+        cl = cl_df.values
+        names = numpy.array(cl_df.index)
+
+        metrics_file = os.path.join(directory, 'metrics.csv')
+        metrics_df = pandas.read_csv(metrics_file, header=0, index_col=None)
+        bic = metrics_df['bic'].values[0]
+        bic = bic if not numpy.isnan(bic) else None
+        db = metrics_df['db'].values[0]
+        db = db if not numpy.isnan(db) else None
+        sil = metrics_df['sil'].values[0]
+        sil = sil if not numpy.isnan(sil) else None
+        ch = metrics_df['ch'].values[0]
+        ch = ch if not numpy.isnan(ch) else None
+
+        km_cls_file = os.path.join(directory, 'km_clusters.csv')
+        km_cls = None
+        if os.path.exists(km_cls_file):
+            km_cls = pandas.read_csv(km_cls_file, index_col=0, header=0).values
+
+        return cls(
+            consensus_matrix=cmatrix,
+            cluster_membership=cl,
+            k=len(numpy.unique(cl)),
+            names=names,
+            bic=bic,
+            db=db,
+            sil=sil,
+            ch=ch,
+            km_cls=km_cls,
+        )
 
 class InvalidClusteringMetric(Exception):
     '''InvalidClusteringMetric
