@@ -35,11 +35,13 @@ class build_ext(build_ext_orig):
 distance_module = CTypesExtension(
     'pyckmeans.distance.lib.distance',
     sources=['pyckmeans/distance/src/distance.cpp'],
+    language='c++',
 )
 
 nucencode_module = CTypesExtension(
     'pyckmeans.io.lib.nucencode',
     sources=['pyckmeans/io/src/nucencode.cpp'],
+    language='c++',
 )
 
 ext_modules = [
