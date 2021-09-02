@@ -1,4 +1,3 @@
-from numpy.testing._private.utils import assert_raises
 import pytest
 import tempfile
 import os

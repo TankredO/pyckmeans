@@ -6,13 +6,18 @@
 # Inspired by https://github.com/cran/ape/blob/master/R/pcoa.R and
 # https://github.com/biocore/scikit-bio/blob/0.5.4/skbio/stats/ordination/_principal_coordinate_analysis.py#L23
 
+from types import coroutine
+import typing
 from warnings import warn
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Dict, Any
+import json
+import os
 
 import numpy
 import pandas
 
 import pyckmeans.distance
+from .utils import NumpyEncoder
 
 class InvalidPCOAResultError(Exception):
     '''InvalidPCOAResultError
@@ -92,6 +97,14 @@ class PCOAResult:
         self.trace_corr = None
 
         self.names = None
+        if not names is None:
+            n = vectors.shape[0]
+            if len(names) != n:
+                msg = f'Expected {n} names for PCOAResult ' +\
+                    f'but {len(names)} were passed.'
+                raise IncompatibleNamesError(msg)
+
+            self.names = numpy.array(names)
 
         if negative_eigvals:
             if eigvals_corr_rel is None:
@@ -121,20 +134,269 @@ class PCOAResult:
                 'eigvals_rel_cum': self.eigvals_rel_cum,
             })
 
-        if not names is None:
-            n = vectors.shape[0]
-            if len(names) != n:
-                msg = f'Expected {n} names for {n}x{n} distance matrix ' +\
-                    f'but {len(names)} were passed.'
-                raise IncompatibleNamesError(msg)
-
-            self.names = numpy.array(names)
-
     def __repr__(self) -> str:
         str_repr = f'<PCOAResult; neg. eigvals: {self.negative_eigvals}, ' +\
             f'correction: {self.correction}>'
 
         return str_repr
+
+    def to_dict(
+        self,
+    ) -> Dict:
+        '''to_dict
+
+        Convert PCOAResult to dictionary.
+
+        Returns
+        -------
+        Dict
+            PCOAResult as dictionary.
+        '''
+        return {
+            'vectors': self.vectors,
+            'negative_eigvals': self.negative_eigvals,
+            'correction': self.correction,
+            'eigvals': self.eigvals,
+            'eigvals_rel': self.eigvals_rel,
+            'eigvals_rel_cum': self.eigvals_rel_cum,
+            'eigvals_corr_rel': self.eigvals_corr_rel,
+            'eigvals_corr_rel_cum': self.eigvals_corr_rel_cum,
+            'trace': self.trace,
+            'trace_corr': self.trace_corr,
+            'names': self.names,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        pcoa_res_dict: Dict,
+    ) -> 'PCOAResult':
+        '''from_dict
+
+        Construct PCOAResult from dictionary.
+
+        Parameters
+        ----------
+        pcoa_res_dict : Dict
+            PCOAResult as dictionary.
+
+        Returns
+        -------
+        PCOAResult
+            PCOAResult
+        '''
+        return cls(
+            vectors=pcoa_res_dict['vectors'],
+            eigvals=pcoa_res_dict['eigvals'],
+            eigvals_rel=pcoa_res_dict['eigvals_rel'],
+            trace=pcoa_res_dict['trace'],
+            negative_eigvals=pcoa_res_dict['negative_eigvals'],
+            correction=pcoa_res_dict['correction'],
+            eigvals_corr_rel=pcoa_res_dict['eigvals_corr_rel'],
+            trace_corr=pcoa_res_dict['trace_corr'],
+            names=pcoa_res_dict['names'],
+        )
+
+    def to_json(
+        self,
+        file: Optional[str] = None,
+        **kwargs: Dict[str, Any],
+    ) -> Optional[str]:
+        '''to_json
+
+        Convert PCOAResult to JSON string or file.
+
+        Parameters
+        ----------
+        file : Optional[str], optional
+            File path to write the PCOAResult to or None.
+            If None, the JSON string will be returned.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.dump or json.dumps.
+
+        Returns
+        -------
+        Optional[str]
+            None or JSON string.
+        '''
+        pcoa_res_dict = self.to_dict()
+        if file is None:
+            return json.dumps(pcoa_res_dict, cls=NumpyEncoder, **kwargs)
+        else:
+            with open(file, 'w') as json_f:
+                json.dump(pcoa_res_dict, json_f, cls=NumpyEncoder, **kwargs)
+
+        return None
+
+    @classmethod
+    def from_json_str(
+        cls,
+        json_str: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'PCOAResult':
+        '''from_json_str
+
+        Construct PCOAResult from JSON string.
+
+        Parameters
+        ----------
+        json_str: str
+            JSON string.
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+
+        Returns
+        -------
+        PCOAResult
+            PCOAResult
+        '''
+        json_dict = json.loads(json_str, **kwargs)
+
+        json_dict['vectors'] = numpy.array(json_dict['vectors'])
+        json_dict['eigvals'] = numpy.array(json_dict['eigvals'])
+        json_dict['eigvals_rel'] = numpy.array(json_dict['eigvals_rel'])
+        json_dict['eigvals_corr_rel'] = numpy.array(json_dict['eigvals_corr_rel']) \
+            if not numpy.array(json_dict['eigvals_corr_rel']) is None else None
+        json_dict['names'] = numpy.array(json_dict['names']) \
+            if not json_dict['names'] is None else None
+
+        return cls.from_dict(json_dict)
+
+    @classmethod
+    def from_json(
+        cls,
+        file: str,
+        **kwargs: Dict[str, Any],
+    ) -> 'PCOAResult':
+        '''from_json
+
+        Construct PCOAResult from JSON file.
+
+        Parameters
+        ----------
+        file : str
+            JSON file
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to json.loads.
+        Returns
+        -------
+        PCOAResult
+            PCOAResult
+        '''
+        with open(file, 'r') as json_f:
+            json_string = json_f.read()
+
+        return cls.from_json_str(json_string, **kwargs)
+
+    def to_dir(
+        self,
+        out_dir: str,
+        force: bool = False,
+    ):
+        '''to_dir
+
+        Save PCOAResult to directory.
+        The directory will contain the three files 'vectors.csv', comprising the eigenvectors,
+        'values.csv', comprising the eigenvalues, and 'others.csv', comprising trace and correction
+        data.
+
+        Parameters
+        ----------
+        out_dir : str
+            Output directory. Will be created if it does not exist.
+        force : bool, optional
+            Write into out_dir even if it does already exist, by default False.
+
+        Raises
+        ------
+        Exception
+            Raised if there is a prbolem with out_dir.
+        '''
+        if os.path.exists(out_dir):
+            if not force:
+                msg = f'Output directory "{out_dir}" already exists.'
+                raise Exception(msg)
+        else:
+            os.mkdir(out_dir)
+
+        vectors_file = os.path.join(out_dir, 'vectors.csv')
+        vectors_df = pandas.DataFrame(
+            self.vectors,
+            index=self.names,
+            columns=[f'PCo{n}' for n in range(self.vectors.shape[1])]
+        )
+        vectors_df.index.name = 'sample'
+        vectors_df.to_csv(vectors_file, index=True, header=True)
+
+        values_file = os.path.join(out_dir, 'values.csv')
+        self.values.to_csv(values_file, index=True, header=True)
+
+        others_files = os.path.join(out_dir, 'others.csv')
+        pandas.DataFrame(
+            dict(
+                trace=[self.trace],
+                trace_corr=[self.trace_corr],
+                negative_eigvals=[self.negative_eigvals],
+                correction=[self.correction],
+            ),
+        ).to_csv(others_files, index=False, header=True)
+
+    @classmethod
+    def from_dir(
+        cls,
+        directory: str,
+    ) -> 'PCOAResult':
+        '''from_dir
+
+        Construct PCOAResult from a directory contraining the three files 'vectors.csv',
+        'values.csv', and 'others.csv'. See :func:`<pyckmeans.ordination.PCOAResult.to_dir>`.
+
+        Parameters
+        ----------
+        directory : str
+            PCOAResult directory.
+
+        Returns
+        -------
+        PCOAResult
+            PCOAResult
+
+        Raises
+        ------
+        Exception
+            Raised if there is a problem with directory.
+        '''
+        if not os.path.exists(directory) or not os.path.isdir(directory):
+            msg = f'Could not find directory at "{directory}".'
+            raise Exception(msg)
+
+        vectors_file = os.path.join(directory, 'vectors.csv')
+        vectors_df = pandas.read_csv(vectors_file, header=0, index_col=0)
+
+        values_file = os.path.join(directory, 'values.csv')
+        values = pandas.read_csv(values_file, header=0, index_col=0)
+
+        others_files = os.path.join(directory, 'others.csv')
+        others = pandas.read_csv(others_files, header=0, index_col=None)
+
+        trace_corr = others['trace_corr'].values[0]
+        trace_corr = trace_corr if not numpy.isnan(trace_corr) else None
+
+        correction = others['correction'].values[0]
+        correction = correction if isinstance(correction, str) else None
+
+        return cls(
+            vectors=vectors_df.values,
+            eigvals=values['eigvals'],
+            eigvals_rel=values['eigvals_rel'],
+            eigvals_corr_rel=\
+                values['eigvals_rel_corrected'] if 'eigvals_rel_corrected' in values.columns else None, # pylint: disable=unsubscriptable-object
+            trace=others['trace'].values[0],
+            trace_corr=trace_corr,
+            negative_eigvals=others['negative_eigvals'].values[0],
+            correction=correction,
+            names=numpy.array(vectors_df.index),
+        )
 
     def get_vectors(
         self,
