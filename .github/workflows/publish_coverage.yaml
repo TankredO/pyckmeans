@@ -1,0 +1,42 @@
+name: Publish coverage report to coveralls
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        description: 'Publish coverage report to coveralls tags'
+jobs:
+  Publish-coverage:
+    name: Publish coverage
+    runs-on: "windows-latest"
+    env:
+      COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+    steps:
+      - run: echo "This job was triggered by ${{ github.event_name }}."
+      - run: echo "This job is now running on ${{ runner.os }}."
+      - run: echo "The branch name is ${{ github.ref }}"
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Which version
+        run: which python
+      - name: Install coveralls
+        run: python -m pip install coveralls
+      - name: Install pyckmeans
+        run: |
+          python -m pip install --no-deps --ignore-installed -vv -e .
+      - name: Generate coverage report
+        run: python -m coverage run --source=pyckmeans -m pytest .\pyckmeans\
+      - name: Publish coverage report to coveralls
+        run: python -m coveralls
+      - run: echo "This job's status is ${{ job.status }}."
