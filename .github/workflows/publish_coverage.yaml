@@ -13,7 +13,7 @@ jobs:
     name: Publish coverage
     runs-on: "windows-latest"
     env:
-      COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
     steps:
       - run: echo "This job was triggered by ${{ github.event_name }}."
       - run: echo "This job is now running on ${{ runner.os }}."
