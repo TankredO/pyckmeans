@@ -30,8 +30,8 @@ jobs:
           python-version: "3.9"
       - name: Which version
         run: which python
-      - name: Install coveralls
-        run: python -m pip install coveralls
+      - name: Install coveralls and pytest
+        run: python -m pip install coveralls pytest
       - name: Install pyckmeans
         run: |
           python -m pip install --no-deps --ignore-installed -vv -e .
