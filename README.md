@@ -1,3 +1,8 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/pyckmeans.svg)](https://badge.fury.io/py/pyckmeans)
+[![Anaconda-Server Badge](https://anaconda.org/tankredo/pyckmeans/badges/version.svg)](https://anaconda.org/tankredo/pyckmeans)
+[![Coverage Status](https://coveralls.io/repos/github/TankredO/pyckmeans/badge.svg?branch=main)](https://coveralls.io/github/TankredO/pyckmeans?branch=main)
+
 # pyckmeans
 
 pyckmeans is a Python package for [Consensus K-Means](https://doi.org/10.1023/A:1023949509487) and [Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) clustering, especially in the context of DNA sequence data. To evaluate the quality of clusterings, pyckmeans implements several internal validation metrics.
