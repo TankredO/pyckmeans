@@ -7,8 +7,9 @@ import os
 from pyckmeans.io import read_alignment
 from pyckmeans.distance import alignment_distance
 from pyckmeans.ordination import PCOAResult, pcoa
-from pyckmeans.core import CKmeans, MultiCKMeans
-from pyckmeans.utils import plot_ckmeans_result, plot_multickmeans_metrics
+from pyckmeans.core import CKmeans, MultiCKMeans, WECR
+from pyckmeans.utils import plot_ckmeans_result, plot_multickmeans_metrics, MultiCKMeansProgressBars
+import tqdm
 
 PHYLIP_STR_0 = \
 '''10 14
@@ -62,8 +63,10 @@ def test_simple_workflow(prep_phylip_files):
     print('ckm_0_res.cl:', ckm_0_res.cl)
 
     ckm_1 = CKmeans(k=2, n_rep=50, n_init=2)
-    ckm_1.fit(pcoares_0)
-    ckm_1_res = ckm_1.predict(pcoares_0)
+    with tqdm.tqdm(total=ckm_1.n_rep) as pb:
+        ckm_1.fit(pcoares_0, progress_callback=pb.update)
+    with tqdm.tqdm(total=ckm_1.n_rep) as pb:
+        ckm_1_res = ckm_1.predict(pcoares_0, progress_callback=pb.update)
     ckm_1_res.sort(in_place=True)
     ckm_1_res.recalculate_cluster_memberships(pcoares_0, linkage_type='complete')
 
@@ -104,8 +107,10 @@ def test_simple_workflow(prep_phylip_files):
 def test_multi_workflow(prep_pcoa_results):
     pcoares_0: PCOAResult = prep_pcoa_results[0]
     mckm_0 = MultiCKMeans([2,3,3])
-    mckm_0.fit(pcoares_0)
-    mckm_0_res = mckm_0.predict(pcoares_0)
+    with MultiCKMeansProgressBars(mckm_0) as pb:
+        mckm_0.fit(pcoares_0, progress_callback=pb.update)
+    with MultiCKMeansProgressBars(mckm_0) as pb:
+        mckm_0_res = mckm_0.predict(pcoares_0, progress_callback=pb.update)
 
     plot_multickmeans_metrics(mckm_0_res)
     mckm_0_res.plot_metrics()
@@ -126,6 +131,17 @@ def test_multi_workflow(prep_pcoa_results):
     mckm_2_res_cls = mckm_2.predict(df, return_cls=True)
     assert mckm_2_res_cls.ckmeans_results[0].km_cls.shape == (mckm_2.n_rep, df.shape[0])
     mckm_2_res_cls.sort(0)
+
+def test_wecr_workflow(prep_pcoa_results):
+    pcoares_0: PCOAResult = prep_pcoa_results[0]
+    wecr_0 = WECR([2, 3])
+    
+    with tqdm.tqdm(total=wecr_0.n_rep) as pb:
+        wecr_0.fit(pcoares_0, progress_callback=pb.update)
+    with tqdm.tqdm(total=wecr_0.n_rep) as pb:
+        wecr_res_0 = wecr_0.predict(pcoares_0, progress_callback=pb.update)
+    
+    wecr_res_0.recalculate_cluster_memberships(pcoares_0, 'single')
 
 def test_plotting(prep_pcoa_results):
     pcoares_0 = prep_pcoa_results[0]

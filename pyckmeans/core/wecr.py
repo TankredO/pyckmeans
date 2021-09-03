@@ -427,6 +427,10 @@ class WECRResult:
                 pyckmeans.ordering.condensed_form(1 - wecr_res.cmatrix),
                 method=linkage_type,
             )
+            # cluster distance can become negative due to floating point
+            # errors.
+            linkage[numpy.abs(linkage) < 1e-8] = 0
+
             # fcluster clusters start at one
             cl = hierarchy.fcluster(linkage, k, criterion='maxclust') - 1
             cluster_membership.append(cl)
@@ -803,6 +807,7 @@ def _prepare_constraints(
     must_link: numpy.ndarray,
     must_not_link: numpy.ndarray,
     names: Union[None, numpy.ndarray],
+    n_samples: int,
 ) -> Tuple[numpy.ndarray, numpy.ndarray]:
     '''_prepare_constraints
 
@@ -817,6 +822,8 @@ def _prepare_constraints(
         Must not link constraints.
     names : Union[None, numpy.ndarray]
         Names or None.
+    n_samples : int
+        Number of samples (observations, data points)
 
     Returns
     -------
@@ -829,6 +836,17 @@ def _prepare_constraints(
     InvalidConstraintsError
         Raised if an invalid constraints argument is provided.
     '''
+    if must_link.shape[1] != 2:
+        msg = f'Invalid must_link constraint shape ({must_link.shape}). Constraints must be ' +\
+            'provided as c*2 matrix, where each row represents a pair of samples, and c is ' +\
+            'the number of constraints.'
+        raise InvalidConstraintsError(msg)
+    if must_not_link.shape[1] != 2:
+        msg = f'Invalid must_not_link constraint shape ({must_not_link.shape}). Constraints ' +\
+            'must be provided as c*2 matrix, where each row represents a pair of samples, and ' +\
+            'c is the number of constraints.'
+        raise InvalidConstraintsError(msg)
+
     if must_link.dtype.type == numpy.dtype(str) or must_not_link.dtype.type == numpy.dtype(str):
         if names is None:
             msg = 'Constraints (must_link, must_not_link) can only contain character strings, if' +\
@@ -849,6 +867,11 @@ def _prepare_constraints(
                 raise InvalidConstraintsError(msg)
             ml[i] = numpy.array([a_idcs[0][0], b_idcs[0][0]])
     else:
+        invalid_constraints = must_link[must_link >= n_samples]
+        if len(invalid_constraints) > 0:
+            msg = f'Invalid constraint indices {invalid_constraints}. Constraint indices ' +\
+                f'must be smaller than the number of samples in x ({n_samples}).'
+            raise InvalidConstraintsError(msg)
         ml = must_link
 
     if must_not_link.dtype.type == numpy.dtype(str):
@@ -865,6 +888,11 @@ def _prepare_constraints(
                 raise InvalidConstraintsError(msg)
             mnl[i] = numpy.array([a_idcs[0][0], b_idcs[0][0]])
     else:
+        invalid_constraints = must_not_link[must_not_link >= n_samples]
+        if len(invalid_constraints) > 0:
+            msg = f'Invalid constraint indices {invalid_constraints}. Constraint indices ' +\
+                f'must be smaller than the number of samples in x ({n_samples}).'
+            raise InvalidConstraintsError(msg)
         mnl = must_not_link
 
     return ml, mnl
@@ -1038,10 +1066,10 @@ class WECR:
         '''
         names = None
         if isinstance(x, pandas.DataFrame):
-            names = numpy.array(x.index)
+            names = numpy.array(x.index).astype(str)
             x = x.values
         elif isinstance(x, pyckmeans.ordination.PCOAResult):
-            names = numpy.array(x.names)
+            names = numpy.array(x.names).astype(str)
             x = x.vectors
 
         # == prepare constraints
@@ -1055,7 +1083,7 @@ class WECR:
         # K-Means, instead of forming the two big matrices H and W, and calculting
         # the membership matrix in one go. This was done to save memory.
 
-        ml, mnl = _prepare_constraints(must_link, must_not_link, names)
+        ml, mnl = _prepare_constraints(must_link, must_not_link, names, x.shape[0])
         # Mu: ml, must link as numpy array of sample indices [[a0, b0], [a1, b1]]
         # C: mnl, must not link as numpy array of sample indices [[a0, b0], [a1, b1]]
 

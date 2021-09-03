@@ -1,3 +1,4 @@
+from pyckmeans.distance import DistanceMatrix
 import pytest
 import tempfile
 import os
@@ -5,7 +6,7 @@ import os
 import numpy as np
 
 from pyckmeans.io import phylip
-from pyckmeans.io.phylip import InvalidPhylipAlignmentError, InvalidPhylipMatrixError, read_phylip_distmat, write_phylip_distmat
+from pyckmeans.io.phylip import InvalidPhylipAlignmentError, InvalidPhylipMatrixError, read_phylip_distmat, write_phylip_distmat, IncompatibleNamesError
 
 
 # ==== alignment
@@ -43,6 +44,11 @@ Sample1 ACT--CATC
 Sample2 ACTTGCATC
 '''
 
+PHYLIP_STR_5 = \
+'''1 9
+Sample0 ACTGTCATG
+'''
+
 @pytest.fixture(scope='session')
 def prep_phylip_files():
     with tempfile.TemporaryDirectory() as tempdir:
@@ -67,6 +73,10 @@ def prep_phylip_files():
         phylip_file_4 = os.path.join(tempdir, 'phylip_4.phy')
         with open(phylip_file_4, 'w') as f:
             f.write(PHYLIP_STR_4)
+        
+        phylip_file_5 = os.path.join(tempdir, 'phylip_5.phy')
+        with open(phylip_file_5, 'w') as f:
+            f.write(PHYLIP_STR_5)
 
         yield (
             # should work
@@ -77,11 +87,12 @@ def prep_phylip_files():
             # shouldn't work
             phylip_file_3,
             phylip_file_4,
+            phylip_file_5,
         )
 
         print(f'Deleted temporary directory {tempdir}.')
 
-def test_read_fasta_alignment(prep_phylip_files):
+def test_read_phylip_alignment(prep_phylip_files):
     r_0 = phylip.read_phylip_alignment(prep_phylip_files[0])
     r_1 = phylip.read_phylip_alignment(prep_phylip_files[1])
     r_2 = phylip.read_phylip_alignment(prep_phylip_files[2])
@@ -94,6 +105,8 @@ def test_read_fasta_alignment(prep_phylip_files):
         r_3 = phylip.read_phylip_alignment(prep_phylip_files[3])
     with pytest.raises(InvalidPhylipAlignmentError):
         r_4 = phylip.read_phylip_alignment(prep_phylip_files[4])
+    with pytest.raises(InvalidPhylipAlignmentError):
+        r_5 = phylip.read_phylip_alignment(prep_phylip_files[5])
 
 
 
@@ -140,7 +153,7 @@ Sample3 0.30 0.70 0.50 0.00
 '''
 
 PHYLIP_DIST_STR_5 = \
-'''5
+'''4
 Sample0 0.00 0.90 0.80 0.30
 Sample1 0.90  0.40 0.70
 Sample2 0.80 0.40 0.00 0.50
@@ -148,12 +161,39 @@ Sample3 0.30 0.70 0.50 0.00
 '''
 
 PHYLIP_DIST_STR_6 = \
-'''5
+'''4
+
+Sample0 0.00 0.90 0.80 0.30
+Sample1 0.90 0.00 0.40 0.70
+Sample2 0.80 0.40 0.00 0.50
+Sample3 0.30 0.70 0.50 0.00
+'''
+
+PHYLIP_DIST_STR_7 = \
+'''X
 Sample0 0.00 0.90 0.80 0.30
 
 Sample1 0.90 0.00 0.40 0.70
 Sample2 0.80 0.40 0.00 0.50
 Sample3 0.30 0.70 0.50 0.00
+'''
+
+PHYLIP_DIST_STR_8 = \
+'''4
+Sample0 0.00 0.90 0.80 0.30
+
+Sample1 0.90 0.00 0.40 0.70
+Sample2 0.80 0.40 0.00 0.50
+Sample3 0.30 0.70 0.50 0.00
+'''
+
+PHYLIP_DIST_STR_9 = \
+'''4
+Sample0
+
+Sample1 0.90
+Sample2 0.80 
+Sample3 0.30 0.70 0.50
 '''
 
 @pytest.fixture(scope='session')
@@ -188,6 +228,18 @@ def prep_phylip_dist_files():
         phylip_dist_file_6 = os.path.join(tempdir, 'phylip_dist_6.dist')
         with open(phylip_dist_file_6, 'w') as f:
             f.write(PHYLIP_DIST_STR_6)
+        
+        phylip_dist_file_7 = os.path.join(tempdir, 'phylip_dist_7.dist')
+        with open(phylip_dist_file_7, 'w') as f:
+            f.write(PHYLIP_DIST_STR_7)
+        
+        phylip_dist_file_8 = os.path.join(tempdir, 'phylip_dist_8.dist')
+        with open(phylip_dist_file_8, 'w') as f:
+            f.write(PHYLIP_DIST_STR_8)
+        
+        phylip_dist_file_9 = os.path.join(tempdir, 'phylip_dist_9.dist')
+        with open(phylip_dist_file_9, 'w') as f:
+            f.write(PHYLIP_DIST_STR_9)
 
         yield (
             # should work
@@ -200,6 +252,9 @@ def prep_phylip_dist_files():
             phylip_dist_file_4,
             phylip_dist_file_5,
             phylip_dist_file_6,
+            phylip_dist_file_7,
+            phylip_dist_file_8,
+            phylip_dist_file_9,
         )
 
         print(f'Deleted temporary directory {tempdir}.')
@@ -229,11 +284,28 @@ def test_phylip_distance(prep_phylip_dist_files):
         phylip.read_phylip_distmat(prep_phylip_dist_files[5])
     with pytest.raises(InvalidPhylipMatrixError):
         phylip.read_phylip_distmat(prep_phylip_dist_files[6])
+    with pytest.raises(InvalidPhylipMatrixError):
+        phylip.read_phylip_distmat(prep_phylip_dist_files[7])
+    with pytest.raises(InvalidPhylipMatrixError):
+        phylip.read_phylip_distmat(prep_phylip_dist_files[8])
+    with pytest.raises(InvalidPhylipMatrixError):
+        phylip.read_phylip_distmat(prep_phylip_dist_files[9])
 
     # == writing
     with tempfile.TemporaryDirectory() as tempdir:
         d_file_0 = os.path.join(tempdir, 'd_file_0.dist')
         write_phylip_distmat(d_0, d_file_0)
+        with pytest.raises(FileExistsError):
+            write_phylip_distmat(d_0, d_file_0, force=False)
+        with pytest.raises(FileExistsError):
+            d_path = os.path.join(tempdir, 'SOMEDIR')
+            os.mkdir(d_path)
+            write_phylip_distmat(d_0, d_path, force=True)
+        with pytest.raises(IncompatibleNamesError):
+            d_x = DistanceMatrix(d_0.dist_mat.copy(), d_0.names.copy())
+            d_x.names = d_x.names[1:]
+            d_path = os.path.join(tempdir, 'somefile.dist')
+            write_phylip_distmat(d_x, d_path)
 
         d_0_r = read_phylip_distmat(d_file_0)
         nm_0_r = d_0_r.names
@@ -246,3 +318,5 @@ def test_phylip_distance(prep_phylip_dist_files):
         nm_1_r = d_1_r.names
         assert all([a == b for a, b in zip(nm_1, nm_1_r)])
         assert np.sum(np.abs(d_1.dist_mat - d_1_r.dist_mat)) < eps
+
+

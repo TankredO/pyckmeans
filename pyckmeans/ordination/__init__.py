@@ -415,7 +415,6 @@ class PCOAResult:
             by default None.
             Can be one of:
 
-            * 'eigvals_cum'
             * 'eigvals_rel_cum'
             * 'eigvals_rel_corrected_cum'
 
@@ -442,7 +441,7 @@ class PCOAResult:
         InvalidOutFormatError
             Raised if an invalid out_format is provided.
         '''
-        available_filters = ('eigvals_cum', 'eigvals_rel_cum', 'eigvals_rel_corrected_cum')
+        available_filters = ('eigvals_rel_cum', 'eigvals_rel_corrected_cum')
         output_formats = ('numpy', 'np', 'pandas', 'pd')
 
         x = self.vectors
@@ -552,6 +551,11 @@ def pcoa(
 
     n = x.shape[0]
 
+    if not correction is None and not correction in ['lingoes', 'cailliez']:
+        msg = f'Unknown correction type "{correction}". ' +\
+            'Available correction types are: "lingoes", "cailliez"'
+        raise InvalidCorrectionTypeError(msg)
+
     # center matrix
     dmat_centered = _center_mat((x * x) / -2)
     trace = numpy.diag(dmat_centered).sum()
@@ -620,10 +624,6 @@ def pcoa(
             )
 
         # negative eigenvalues, correction
-        if not correction in ['lingoes', 'cailliez']:
-            msg = f'Unknown correction type "{correction}". ' +\
-                'Available correction types are: "lingoes", "cailliez"'
-            raise InvalidCorrectionTypeError(msg)
 
         # -- correct distance matrix
         # lingoes correction

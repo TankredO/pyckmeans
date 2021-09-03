@@ -3,7 +3,7 @@ import pytest
 from sklearn.datasets import make_blobs
 from scipy.spatial.distance import squareform, pdist
 
-from pyckmeans.ordering import distance_order, reorder_distance
+from pyckmeans.ordering import InvalidLinkageType, InvalidReorderMethod, distance_order, reorder_distance
 from pyckmeans.distance import DistanceMatrix
 
 @pytest.fixture(scope='session')
@@ -35,6 +35,13 @@ def test_reorder(prepare_distances):
     d3_o = reorder_distance(d3)
     print('d3_o:', d3_o)
 
+    print('d0_o olo:', reorder_distance(d0, method='OLO'))
+
+    with pytest.raises(InvalidReorderMethod):
+        reorder_distance(d0, method='XYZ')
+    with pytest.raises(InvalidLinkageType):
+        reorder_distance(d0, linkage_type='XYZ')
+
 def test_order(prepare_distances):
     d0, d1, d2, d3 = prepare_distances
 
@@ -46,3 +53,11 @@ def test_order(prepare_distances):
     print('o2:', o2)
     o3 = distance_order(d3)
     print('o3:', o3)
+
+    print('o0 olo:', distance_order(d0, method='OLO'))
+
+    with pytest.raises(InvalidReorderMethod):
+        distance_order(d0, method='XYZ')
+    with pytest.raises(InvalidLinkageType):
+        distance_order(d0, linkage_type='XYZ')
+    

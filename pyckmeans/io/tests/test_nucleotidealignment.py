@@ -1,3 +1,6 @@
+import warnings
+
+from pyckmeans.io.nucleotide_alignment import InvalidAlignmentCharacterError
 import numpy
 import pytest
 
@@ -9,6 +12,14 @@ from pyckmeans.io import \
 
 from test_fasta import prep_fasta_files
 from test_phylip import prep_phylip_files
+
+Bio = None
+try:
+    import Bio
+    from Bio import SeqIO, AlignIO
+except:
+    warnings.warn('Could not test Biopython since it is not installed.')
+
 
 def test_simple(prep_fasta_files, prep_phylip_files):
     na_fa_0 = NucleotideAlignment.from_file(prep_fasta_files[0])
@@ -37,6 +48,42 @@ def test_simple(prep_fasta_files, prep_phylip_files):
         NucleotideAlignment.from_file(prep_fasta_files[0], 'xyz')
     with pytest.raises(InvalidAlignmentFileExtensionError):
         NucleotideAlignment.from_file('test.png', 'auto')
+
+    na_phy_0_di = na_phy_0.drop_invariant_sites(in_place=False)
+    assert not na_phy_0_di is na_phy_0
+    na_phy_0_di = na_phy_0.drop_invariant_sites(in_place=True)
+    assert na_phy_0_di is na_phy_0
+
+    na_phy_0_cp = na_phy_0.copy()
+    assert (na_phy_0_cp.names == na_phy_0.names).all()
+    assert (na_phy_0_cp.sequences == na_phy_0.sequences).all()
+
+    with pytest.raises(Exception):
+        NucleotideAlignment(
+            ['a', 'b'],
+            numpy.array([
+                ['A', 'C'],
+                ['A', 'T'],
+                ['A', 'T']
+            ]),
+            fast_encoding=False
+        )
+    
+    with pytest.raises(InvalidAlignmentCharacterError):
+        NucleotideAlignment(
+            ['a', 'b', 'C'],
+            numpy.array([
+                ['A', '3'],
+                ['A', 'T'],
+                ['A', 'T']
+            ]),
+            fast_encoding=False,
+        )
+
+    if not Bio is None:
+        bio_aln = AlignIO.read(prep_fasta_files[0], format='fasta')
+        aln_b = NucleotideAlignment.from_bp_seqio_records(bio_aln)
+        print('aln_b:', aln_b)
 
 
 def test_read_alignment(prep_fasta_files, prep_phylip_files):

@@ -323,9 +323,9 @@ class MultiCKMeans:
         '''
         names = None
         if isinstance(x, PCOAResult):
-            names = x.names
+            names = numpy.array(x.names).astype(str)
         elif isinstance(x, pandas.DataFrame):
-            names = x.index
+            names = numpy.array(x.index).astype(str)
 
         ckmeans_results: List[CKmeansResult] = []
         for ckm in self.ckmeans:

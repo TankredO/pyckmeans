@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from pyckmeans.io.csv import read_csv_distmat, write_csv_distmat
+from pyckmeans.io.csv import InvalidMatrixShapeError, read_csv_distmat, write_csv_distmat
 
 d_0 = np.array([
     [0.0, 1.0, 2.0],
@@ -24,6 +24,16 @@ d_1 = np.array([
 nm_1 = ['a', 'b', 'c', 'd']
 df_1 = pd.DataFrame(d_1, columns=nm_1, index=nm_1)
 
+# invalid input
+d_2 = np.array([
+    [0.0, 1.0, 2.0],
+    [1.0, 0.0, 3.0],
+    [2.0, 3.0, 0.0],
+    [0.5, 2.4, 1.5]
+])
+nm_2 = ['a', 'b', 'c']
+df_2 = pd.DataFrame(d_2, columns=nm_2, index=['c', 'b', 'a', '0'])
+
 @pytest.fixture(scope='session')
 def prep_csv_files():
     with tempfile.TemporaryDirectory() as tempdir:
@@ -41,12 +51,16 @@ def prep_csv_files():
         csv_file_3 = os.path.join(tempdir, 'dist_3.csv')
         df_0.to_csv(csv_file_3, index=None, header=None)
 
+        csv_file_4 = os.path.join(tempdir, 'dist_4.csv')
+        df_2.to_csv(csv_file_4, index=None, header=None)
+
         yield (
             # should work
             (csv_file_0, d_0, nm_0),
             (csv_file_1, d_1, nm_1),
             (csv_file_2, d_0, nm_0),
             (csv_file_3, d_0, None),
+            (csv_file_4, d_0, None),
         )
 
         print(f'Deleted temporary directory {tempdir}.')
@@ -96,3 +110,14 @@ def test_csv(prep_csv_files, prep_outdir):
     write_csv_distmat(dm_3, csv_of_3)
     dm_3_r = read_csv_distmat(csv_of_3)
     assert np.max(np.abs(dm_3.dist_mat - dm_3_r.dist_mat)) < eps
+
+    with pytest.raises(FileExistsError):
+        write_csv_distmat(dm_3, os.path.join(prep_outdir, 'dist_3.csv'))
+    with pytest.raises(FileExistsError):
+        d_path = os.path.join(prep_outdir, 'SOMEDIR')
+        os.mkdir(d_path)
+        write_csv_distmat(dm_3, d_path)
+
+    csv_f_4, d_4_expected, nm_4_expected = prep_csv_files[4]
+    with pytest.raises(InvalidMatrixShapeError):
+        read_csv_distmat(csv_f_4, None, None, ',')

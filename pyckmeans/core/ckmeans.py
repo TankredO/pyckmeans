@@ -894,10 +894,10 @@ class CKmeans:
         '''
         names = None
         if isinstance(x, pyckmeans.ordination.PCOAResult):
-            names = x.names
+            names = numpy.array(x.names).astype(str)
             x = x.vectors
         elif isinstance(x, pandas.DataFrame):
-            names = numpy.array(x.index)
+            names = numpy.array(x.index).astype(str)
             x = x.values
 
         cmatrix = numpy.zeros((x.shape[0], x.shape[0]))

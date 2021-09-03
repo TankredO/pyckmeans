@@ -89,6 +89,10 @@ def distance_order(
 
     dist_mat_cond = condensed_form(dist_mat)
     linkage_mat = hierarchy.linkage(dist_mat_cond, method=linkage_type)
+    # cluster distance can become negative due to floating point
+    # errors.
+    linkage_mat[numpy.abs(linkage_mat) < 1e-8] = 0
+
     if method == 'OLO':
         linkage_mat = hierarchy.optimal_leaf_ordering(linkage_mat, dist_mat_cond)
     elif method == 'GW':

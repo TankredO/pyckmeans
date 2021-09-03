@@ -54,7 +54,7 @@ def rel_extrema_idcs(
 VALID_CURVE = ('convex', 'concave')
 VALID_DIRECTION = ('increasing', 'decreasing')
 
-class KneeLocator(object):
+class KneeLocator:
     '''KneeLocator
 
     An implementation of the Kneedle algorithm [1]_.
@@ -103,7 +103,6 @@ class KneeLocator(object):
             31st International Conference on Distributed Computing Systems Workshops.
             doi: 10.1109/ICDCSW.2011.20.
     '''
-
     def __init__(
         self,
         x: numpy.ndarray,

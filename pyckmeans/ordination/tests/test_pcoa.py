@@ -4,8 +4,11 @@ import os
 
 import numpy as np
 import pandas as pd
+from sklearn.datasets import make_blobs
+from scipy.spatial.distance import pdist, squareform
+
 from pyckmeans.distance import DistanceMatrix
-from pyckmeans.ordination import pcoa, PCOAResult
+from pyckmeans.ordination import InvalidCorrectionTypeError, InvalidFilterError, InvalidOutFormatError, pcoa, PCOAResult
 
 @pytest.fixture()
 def prepare_distmats():
@@ -77,6 +80,13 @@ def test_pcoa_simple(prepare_distmats):
     print(vectors_1_pd.index.values)
     assert np.all(vectors_1_pd.index.values == pcoares_1.names)
 
+    x_2, _ = make_blobs(200, 3, centers= 3)
+    d_2 = squareform(pdist(x_2))
+    pcoares_2 = pcoa(d_2)
+
+    with pytest.raises(InvalidCorrectionTypeError):
+        pcoa(d_2, correction='NONEXISTING_CORRECTION')
+
 def assert_pcoa_res_are_equal(
     a: PCOAResult,
     b: PCOAResult,
@@ -116,3 +126,25 @@ def test_save_load(prepare_distmats, test_dir, correction):
     pcoa_res_1.to_dir(pcoa_res_1_dir)
     pcoa_res_1_l = PCOAResult.from_dir(pcoa_res_1_dir)
     assert_pcoa_res_are_equal(pcoa_res_1, pcoa_res_1_l)
+
+    assert_pcoa_res_are_equal(
+        pcoa_res_1, PCOAResult.from_json_str(pcoa_res_1.to_json())
+    )
+
+    with pytest.raises(Exception):
+        pcoa_res_1.to_dir(pcoa_res_1_dir, force=False)
+    with pytest.raises(Exception):
+        PCOAResult.from_dir('NONEXISTING_DIR')
+
+
+def test_pcoa_result(prepare_distmats):
+    pcoa_res_0 = pcoa(prepare_distmats[0][0])
+
+    with pytest.raises(InvalidFilterError):
+        pcoa_res_0.get_vectors(filter_by='NONEXISTING_FILTER', filter_th=0.8)
+    with pytest.raises(InvalidFilterError):
+        pcoa_res_0.get_vectors(filter_by='eigvals_rel_cum')
+    with pytest.raises(InvalidFilterError):
+        pcoa_res_0.get_vectors(filter_th=0.8)
+    with pytest.raises(InvalidOutFormatError):
+        pcoa_res_0.get_vectors(filter_by='eigvals_rel_cum', filter_th=0.8, out_format='NONEXISTING_FORMAT')
