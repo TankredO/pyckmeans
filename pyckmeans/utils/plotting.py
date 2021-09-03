@@ -1,14 +1,16 @@
 ''' Plotting utitlies
 '''
 
-from pyckmeans.core import wecr
 from typing import Iterable, Optional, Tuple, Union
 import numpy
 import matplotlib.pyplot as plt
 import matplotlib.figure
 import matplotlib.colors
 import matplotlib.axes
+
 import pyckmeans.core
+from pyckmeans.core import wecr
+from pyckmeans.ordering import distance_order
 
 def plot_ckmeans_result(
     ckm_res: pyckmeans.core.CKmeansResult,
@@ -176,7 +178,7 @@ def plot_wecr_result(
         Sample names to be plotted.
     order : Optional[Union[str, numpy.ndarray]]
         Sample Plotting order. Either a string, determining the oder method to use
-        (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
+        (see WECRResult.order), or a numpy.ndarray giving the sample order,
         or None to apply no reordering.
     cmap_cm : Union[str, matplotlib.colors.Colormap], optional
         Colormap for the consensus matrix, by default 'Blues'
@@ -308,3 +310,103 @@ def plot_wecr_result_metrics(
     axs[3].set_ylabel('CH')
 
     return fig
+
+def plot_cmatrix(
+    cmatrix: numpy.ndarray,
+    cl: numpy.ndarray,
+    names: Optional[Iterable[str]] = None,
+    order: Optional[Union[str, numpy.ndarray]] = 'GW',
+    cmap_cm: Union[str, matplotlib.colors.Colormap] = 'Blues',
+    cmap_clbar: Union[str, matplotlib.colors.Colormap] = 'tab20',
+    figsize: Tuple[float, float] = (7, 7),
+) -> Tuple[
+    matplotlib.figure.Figure,
+    matplotlib.axes.Axes,
+    matplotlib.axes.Axes,
+    matplotlib.axes.Axes
+]:
+    '''plot_cmatrix
+
+    Plot consensus matrix and consensus clustering.
+
+    Parameters
+    ----------
+    cmatrix : numpy.ndarray
+        Consensus matrix.
+    cl : numpy.ndarray
+        Cluster membership.
+    names : Optional[Iterable[str]]
+        Sample names to be plotted.
+    order : Optional[Union[str, numpy.ndarray]]
+        Sample Plotting order. Either a string, or a numpy.ndarray giving the sample order,
+        or None to apply no reordering.
+    cmap_cm : Union[str, matplotlib.colors.Colormap], optional
+        Colormap for the consensus matrix, by default 'Blues'
+    cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
+        Colormap for the cluster bar, by default 'tab20'
+    figsize : Tuple[float, float], optional
+        Figure size for the matplotlib figure, by default (7, 7).
+
+    Returns
+    -------
+    Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, matplotlib.axes.Axes, matplotlib.axes.Axes]
+        Figure, consensus matrix Axes, cluster membership Axes, colorbar Axes.
+    '''
+    # if order is None do not reorder
+    if order is None:
+        order = numpy.arange(cmatrix.shape[0])
+    # if order is str use WECRResult order
+    elif isinstance(order, str):
+        order = distance_order(1-cmatrix, method=order)
+    # else order must be numpy.ndarray giving the sample order
+
+    cmatrix = cmatrix[order, :][:, order]
+    cl = cl[order]
+
+    # if names is passed use names, else try to get names
+    # from wecr_res, else just use samples indices
+    if names is None:
+        nms = order.astype('str')
+    else:
+        nms = numpy.array(names)[order]
+
+    # build figure layout
+    fig = plt.figure(figsize=figsize)
+    ax_cmat = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    ax_clbar = fig.add_axes([0.05, 0.1, 0.05, 0.8])
+    ax_cbar = fig.add_axes([0.925, 0.1, 0.025, 0.8])
+
+    # = consensus matrix
+    ax_cmat.imshow(cmatrix, cmap=cmap_cm)
+    ax_cmat.set_xticks(numpy.arange(len(nms)))
+    ax_cmat.set_xticklabels(nms)
+    for tick in ax_cmat.get_xticklabels():
+        tick.set_rotation(90)
+    ax_cmat.set_yticks([])
+    ax_cmat.tick_params(left=False)
+
+    # cluster lines
+    cl_01 = []
+    cl_start = 0
+    for i in range(1, len(cl)):
+        if cl[i] != cl[cl_start]:
+            cl_01.append((cl_start, i))
+            cl_start = i
+    cl_01.append((cl_start, len(cl)))
+    cl_01 = numpy.array(cl_01)
+
+    ax_cmat.hlines(cl_01[:, 0] + 0.5 - 1, -0.5, len(nms) - 0.5, color='white', linewidth=2)
+    ax_cmat.vlines(cl_01[:, 0] + 0.5 - 1, -0.5, len(nms) - 0.5, color='white', linewidth=2)
+
+    # = cluster membership bar
+    ax_clbar.imshow(cl.reshape(-1, 1), cmap=cmap_clbar)
+    ax_clbar.set_xticks([])
+    ax_clbar.set_yticks(numpy.arange(len(nms)))
+    ax_clbar.set_yticklabels(nms)
+
+    # = color bar
+    ax_cbar.set_xticks([])
+    ax_cbar.yaxis.tick_right()
+    plt.colorbar(plt.cm.ScalarMappable(cmap=cmap_cm), cax=ax_cbar)
+
+    return fig, ax_cmat, ax_clbar, ax_cbar

@@ -8,7 +8,8 @@ from pyckmeans.io import read_alignment
 from pyckmeans.distance import alignment_distance
 from pyckmeans.ordination import PCOAResult, pcoa
 from pyckmeans.core import CKmeans, MultiCKMeans, WECR
-from pyckmeans.utils import plot_ckmeans_result, plot_multickmeans_metrics, MultiCKMeansProgressBars
+from pyckmeans.utils import plot_ckmeans_result, plot_multickmeans_metrics, MultiCKMeansProgressBars, plot_cmatrix
+
 import tqdm
 
 PHYLIP_STR_0 = \
@@ -160,3 +161,8 @@ def test_plotting(prep_pcoa_results):
     ckm_0_res.plot()
     ckm_0_res.plot(order=None)
     ckm_0_res.plot(order=ord)
+
+    plot_cmatrix(ckm_0_res.cmatrix, ckm_0_res.cl, names=ckm_0_res.names, order = None)
+    plot_cmatrix(ckm_0_res.cmatrix, ckm_0_res.cl, names=ckm_0_res.names, order = 'GW')
+    plot_cmatrix(ckm_0_res.cmatrix, ckm_0_res.cl, names=ckm_0_res.names, order = ord)
+    plot_cmatrix(ckm_0_res.cmatrix, ckm_0_res.cl, names=None, order = None)

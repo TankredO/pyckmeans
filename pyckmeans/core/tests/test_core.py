@@ -103,6 +103,7 @@ def test_wecr():
 
     wecr_res_1.plot(2)
     wecr_res_1.plot_metrics()
+    wecr_res_1.plot_affinity_propagation()
 
     wecr_res_1_rcm = wecr_res_1.recalculate_cluster_memberships(x_1, 'average', in_place=True)
     assert wecr_res_1_rcm is wecr_res_1
@@ -112,6 +113,8 @@ def test_wecr():
 
     cl = wecr_res_1.get_cl(2, with_names=False)
     cl = wecr_res_1.get_cl(2, with_names=True)
+    cl = wecr_res_1.get_cl_affinity_propagation(with_names=False)
+    cl = wecr_res_1.get_cl_affinity_propagation(with_names=True)
     with pytest.raises(InvalidKError):
         wecr_res_1.get_cl(12500)
     with pytest.raises(InvalidKError):

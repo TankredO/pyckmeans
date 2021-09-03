@@ -265,15 +265,15 @@ class WECRResult:
         k: int
             The number of clusters k to use for plotting.
         names : Optional[Iterable[str]]
-            Sample names to be plotted.
+            Sample names to be plotted. If None, self.names will be used.
         order : Optional[Union[str, numpy.ndarray]]
             Sample Plotting order. Either a string, determining the oder method to use
             (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
             or None to apply no reordering.
         cmap_cm : Union[str, matplotlib.colors.Colormap], optional
-            Colormap for the consensus matrix, by default 'Blues'
+            Colormap for the consensus matrix, by default 'Blues'.
         cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
-            Colormap for the cluster bar, by default 'tab20'
+            Colormap for the cluster bar, by default 'tab20'.
         figsize : Tuple[float, float], optional
             Figure size for the matplotlib figure, by default (7, 7).
 
@@ -288,6 +288,56 @@ class WECRResult:
             wecr_res=self,
             k=k,
             names=names,
+            order=order,
+            cmap_cm=cmap_cm,
+            cmap_clbar=cmap_clbar,
+            figsize=figsize,
+        )
+
+    def plot_affinity_propagation(
+        self,
+        names: Optional[Iterable[str]] = None,
+        order: Optional[Union[str, numpy.ndarray]] = 'GW',
+        cmap_cm: Union[str, 'matplotlib.colors.Colormap'] = 'Blues',
+        cmap_clbar: Union[str, 'matplotlib.colors.Colormap'] = 'tab20',
+        figsize: Tuple[float, float] = (7, 7),
+        **kwargs: Dict[str, Any],
+    ) -> 'matplotlib.figure.Figure':
+        '''plot
+
+        Plot wecr result consensus matrix with consensus clusters calculated using
+        Affinity Propagation.
+
+        Parameters
+        ----------
+        names : Optional[Iterable[str]]
+            Sample names to be plotted. If None, self.names will be used.
+        order : Optional[Union[str, numpy.ndarray]]
+            Sample Plotting order. Either a string, determining the oder method to use
+            (see CKmeansResult.order), or a numpy.ndarray giving the sample order,
+            or None to apply no reordering.
+        cmap_cm : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the consensus matrix, by default 'Blues'.
+        cmap_clbar : Union[str, matplotlib.colors.Colormap], optional
+            Colormap for the cluster bar, by default 'tab20'.
+        figsize : Tuple[float, float], optional
+            Figure size for the matplotlib figure, by default (7, 7).
+        kwargs : Dict[str, Any]
+            Additional keyword arguments passed to sklearn.cluster.AffinityPropagation.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Matplotlib figure.
+        '''
+        from pyckmeans.utils.plotting import plot_cmatrix
+
+        cl = self.get_cl_affinity_propagation(with_names=False, **kwargs)
+
+        return plot_cmatrix(
+            cmatrix=self.cmatrix,
+            cl=cl,
+            names=self.names,
             order=order,
             cmap_cm=cmap_cm,
             cmap_clbar=cmap_clbar,
@@ -455,7 +505,7 @@ class WECRResult:
     ) -> Union[numpy.ndarray, pandas.Series]:
         '''get_cl
 
-        Return cluster memberships at a specified k.
+        Return cluster memberships from hierarchical clustering at a specified k.
 
         Parameters
         ----------
@@ -468,7 +518,7 @@ class WECRResult:
         Returns
         -------
         Union[numpy.ndarray, pandas.Series]
-            Cluster memberships
+            Cluster memberships.
 
         Raises
         ------
@@ -481,6 +531,44 @@ class WECRResult:
             raise InvalidKError(msg)
 
         cl = self.cl[numpy.argmax(self.k == k)]
+        if with_names:
+            return pandas.Series(cl, self.names)
+        else:
+            return cl
+
+    def get_cl_affinity_propagation(
+        self,
+        with_names: bool = False,
+        **kwargs: Dict[str, Any],
+    ) -> Union[numpy.ndarray, pandas.Series]:
+        '''get_cl_affinity_propagation
+
+        Get cluster membership according to Affinity Propagation clustering.
+
+        Parameters
+        ----------
+        with_names : bool, optional
+            Return cluster memberships including sample names.
+            If True, a pandas.Series will be returned.
+        kwargs : Dict[str, Any]
+            Additional keywords passed to sklearn.cluster.AffinityPropagation
+
+        Returns
+        -------
+        Union[numpy.ndarray, pandas.Series]
+            Cluster memberships.
+        '''
+        from sklearn.cluster import AffinityPropagation
+
+        af_kwargs = {
+            'random_state': None,
+            'damping': 0.5,
+        }
+        af_kwargs.update(**kwargs)
+
+        affprop = AffinityPropagation(affinity='precomputed', **af_kwargs)
+        cl = affprop.fit_predict(self.cmatrix)
+
         if with_names:
             return pandas.Series(cl, self.names)
         else:
