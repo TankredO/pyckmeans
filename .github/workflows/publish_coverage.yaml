@@ -1,4 +1,4 @@
-name: Publish wheels to PyPi
+name: Publish coverage report to coveralls
 on:
   workflow_dispatch:
     inputs:
@@ -7,19 +7,15 @@ on:
         required: true
         default: 'warning'
       tags:
-        description: 'Publish wheels to PyPi tags'
+        description: 'Publish coverage report to coveralls tags'
   release:
     types: [published]
 jobs:
-  Publish-to-PyPi:
-    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-#         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        os: ["windows-latest",  "macos-latest"]
-        python-version: ["3.6", "3.7", "3.8", "3.9"]
+  Publish-coverage:
+    name: Publish coverage
+    runs-on: "windows-latest"
+    env:
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
     steps:
       - run: echo "This job was triggered by ${{ github.event_name }}."
       - run: echo "This job is now running on ${{ runner.os }}."
@@ -33,15 +29,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.9"
       - name: Which version
         run: which python
-      - name: Install wheel and twine
-        run: python -m pip install wheel twine
+      - name: Install coveralls and pytest
+        run: python -m pip install coveralls pytest
       - name: Install pyckmeans
         run: |
-          python -m pip install --no-deps --ignore-installed -vv .
-          python setup.py bdist_wheel
-      - name: Publish to PyPI
-        run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }}
+          python -m pip install -r requirements.txt
+          python -m pip install biopython
+          python -m pip install --no-deps --ignore-installed -vv -e .
+      - name: Generate coverage report
+        run: python -m coverage run --source=pyckmeans -m pytest .\pyckmeans\
+      - name: Publish coverage report to coveralls
+        run: python -m coveralls
       - run: echo "This job's status is ${{ job.status }}."
