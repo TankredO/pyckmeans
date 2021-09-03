@@ -3,7 +3,6 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Union, Tuple, TYPE_CHECKING
 import os
 import json
-from _pytest.config import cmdline
 
 import numpy
 import pandas
