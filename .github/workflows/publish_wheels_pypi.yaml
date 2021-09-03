@@ -8,6 +8,8 @@ on:
         default: 'warning'
       tags:
         description: 'Publish wheels to PyPi tags'
+  release:
+    types: [published]
 jobs:
   Publish-to-PyPi:
     name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
