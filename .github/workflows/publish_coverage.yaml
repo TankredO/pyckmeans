@@ -8,6 +8,8 @@ on:
         default: 'warning'
       tags:
         description: 'Publish coverage report to coveralls tags'
+  release:
+    types: [published]
 jobs:
   Publish-coverage:
     name: Publish coverage
