@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](/LICENSE)
 [![PyPI version](https://badge.fury.io/py/pyckmeans.svg)](https://badge.fury.io/py/pyckmeans)
-[![Anaconda-Server Badge](https://anaconda.org/tankredo/pyckmeans/badges/version.svg)](https://anaconda.org/tankredo/pyckmeans)
+[![Anaconda-Server Badge](https://img.shields.io/conda/v/TankredO/pyckmeans)](https://anaconda.org/tankredo/pyckmeans)
 [![Coverage Status](https://coveralls.io/repos/github/TankredO/pyckmeans/badge.svg?branch=main)](https://coveralls.io/github/TankredO/pyckmeans?branch=main)
 
 # pyckmeans
