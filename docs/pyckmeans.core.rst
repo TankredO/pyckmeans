@@ -20,6 +20,14 @@ pyckmeans.core.multickmeans module
    :undoc-members:
    :show-inheritance:
 
+pyckmeans.core.utils module
+---------------------------
+
+.. automodule:: pyckmeans.core.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyckmeans.core.wecr module
 --------------------------
 
