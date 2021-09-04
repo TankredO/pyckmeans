@@ -35,7 +35,8 @@ about:
   summary: {{ data.get('description') }}
 
   # The remaining entries in this section are optional, but recommended.
-  description: {{ data.get('long_description') }}
+  description: |
+    pyckmeans is a Python package for Consensus K-Means and Weighted Ensemble Consensus of Random (WECR) K-Means clustering, especially in the context of DNA sequence data.
   doc_url: https://pyckmeans.readthedocs.io
   dev_url: https://github.com/TankredO/pyckmeans
 
