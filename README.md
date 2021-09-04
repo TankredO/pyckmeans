@@ -103,7 +103,7 @@ print('Cluster Membership:', ckm_res.cl)
 
 
     
-![png](./docs/images/output_4_1.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_4_1.png?raw=true)
     
 
 
@@ -156,7 +156,7 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
 
 
     
-![png](./docs/images/output_6_1.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_6_1.png?raw=true)
     
 
 
@@ -323,13 +323,13 @@ fig = ckm_res_k7.plot(figsize=(14,14))
 
 
     
-![png](./docs/images/output_8_2.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_8_2.png?raw=true)
     
 
 
 
     
-![png](./docs/images/output_8_3.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_8_3.png?raw=true)
     
 
 
@@ -393,12 +393,12 @@ print(cluster_membership)
 
 
     
-![png](./docs/images/output_10_1.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_10_1.png?raw=true)
     
 
 
 
     
-![png](./docs/images/output_10_2.png)
+![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_10_2.png?raw=true)
     
 

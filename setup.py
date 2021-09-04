@@ -61,8 +61,8 @@ install_requires = [
 # ====
 description = 'A consensus K-Means implementation.'
 
-long_description_content_type = 'text/x-rst'
-long_description = 'A consensus K-Means implementation.'
+long_description = io.open('README.md').read()
+long_description_content_type = 'text/markdown'
 # ====
 setup(
     name='pyckmeans',
