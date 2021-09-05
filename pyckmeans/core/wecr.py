@@ -337,7 +337,7 @@ class WECRResult:
         return plot_cmatrix(
             cmatrix=self.cmatrix,
             cl=cl,
-            names=self.names,
+            names=self.names if names is None else names,
             order=order,
             cmap_cm=cmap_cm,
             cmap_clbar=cmap_clbar,
