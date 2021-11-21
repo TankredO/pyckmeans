@@ -2,6 +2,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyckmeans?color=blue)](https://pypi.org/project/pyckmeans/)
 [![Anaconda-Server Badge](https://img.shields.io/conda/v/TankredO/pyckmeans?label=conda)](https://anaconda.org/tankredo/pyckmeans)
 [![Coverage Status](https://img.shields.io/coveralls/github/TankredO/pyckmeans)](https://coveralls.io/github/TankredO/pyckmeans?branch=main)
+[![DOI](https://zenodo.org/badge/361376094.svg)](https://zenodo.org/badge/latestdoi/361376094)
 
 # pyckmeans
 
