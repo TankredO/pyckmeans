@@ -11,14 +11,13 @@ pyckmeans is a Python package for [Consensus K-Means](https://doi.org/10.1023/A:
 
 In addition to the clustering functionality, it provides tools for working with DNA sequence data such as reading and writing of DNA alignment files, calculating genetic distances, and Principle Coordinate Analysis (PCoA) for dimensionality reduction.
 
-
 ## Consensus K-Means
 
 [Consensus K-Means](https://doi.org/10.1023/A:1023949509487) is an unsupervised ensemble clustering algorithm, combining multiple K-Means clusterings, where each K-Means is trained on a subset of the data (random subset) and a subset of the the features (random subspace). The predicted cluster memberships of the single clusterings are combined to a consensus (or co-association) matrix, determining the number of times each pair of samples was clustered together over all clusterings. This matrix can be interpreted as similarity matrix and can be used to resolve the final consensus clustering by subjecting it to a last clustering step, e.g. hierarchical, or spectral clustering.
 
 ## WECR K-Means
 
-[Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) is a semi-supervised ensemble clustering algorithm. Similar to consensus K-Means, it is based on a collection of K-Means clusterings, which are each trained on a random subset of data and a random subspace of features. In addition, for each single clustering the number of clusters *k* is also randomized. This library of clusterings is subjected to weighting function that integrates user-supplied must-link and must-not-link constraints, as well as an internal cluster validation criterion. The constraints represent the semi-supervised component of WECR K-Means: the user can provide prior knowledge considering the composition of the clusters. Must-link and must-not-link constraints imply that a pair of samples (observations, data points) is expected to be found in the same or different clusters, respectively. Based on the clusterings and the calculated weights, a weighted consensus (co-association) matrix is constructed, which is subjected to Cluster-based Similariry Partitioning (CSPA; e.g. hierarchical clustering) or spectral clustering to resolve the consensus clustering.
+[Weighted Ensemble Consensus of Random (WECR) K-Means](https://doi.org/10.1109/TKDE.2019.2952596) is a semi-supervised ensemble clustering algorithm. Similar to consensus K-Means, it is based on a collection of K-Means clusterings, which are each trained on a random subset of data and a random subspace of features. In addition, for each single clustering the number of clusters _k_ is also randomized. This library of clusterings is subjected to weighting function that integrates user-supplied must-link and must-not-link constraints, as well as an internal cluster validation criterion. The constraints represent the semi-supervised component of WECR K-Means: the user can provide prior knowledge considering the composition of the clusters. Must-link and must-not-link constraints imply that a pair of samples (observations, data points) is expected to be found in the same or different clusters, respectively. Based on the clusterings and the calculated weights, a weighted consensus (co-association) matrix is constructed, which is subjected to Cluster-based Similariry Partitioning (CSPA; e.g. hierarchical clustering) or spectral clustering to resolve the consensus clustering.
 
 ## Documentation
 
@@ -50,19 +49,16 @@ cd pyckmeans
 pip install .
 ```
 
-
-
 ## Usage
 
 Examples using the Python API:
+
 - [Consensus K-Means: Clustering a Data Matrix (Single K)](#ckmeans-data-single)
 - [Consensus K-Means: Clustering a Data Matrix (Multi K)](#ckmeans-data-multi)
 - [Consensus K-Means: Clustering Sequence Data](#ckmeans-sequence-multi)
 - [WECR K-Means: Clustering Sequence Data](#wecr-sequence)
 
-
 <h3 id="ckmeans-data-single">Consensus K-Means: Clustering a Data Matrix (Single K)</h3>
-
 
 ```python
 from pyckmeans import CKmeans
@@ -101,19 +97,13 @@ print('Cluster Membership:', ckm_res.cl)
     Calinski-Harabasz Index: 630.8235586596012
     Cluster Membership: [0 2 1 0 2 2 1 0 2 1 0 0 2 0 2 2 1 1 1 1 0 1 2 2 2 2 1 0 2 2 1 0 1 1 0 0 0
      1 0 1 2 1 2 2 1 0 0 0 0 1]
-    
 
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_4_1.png?raw=true)
-    
-
 
 <h3 id="ckmeans-data-multi">Consensus K-Means: Clustering a Data Matrix (Multi K)</h3>
 
 The `MultiCKmeans` class allows to train multiple `CKmeans` objects a once.
-This is, for example, useful for exploring clustering for different values of *k*.
-
+This is, for example, useful for exploring clustering for different values of _k_.
 
 ```python
 from pyckmeans import MultiCKMeans
@@ -154,16 +144,10 @@ ckm_res_k3 = mckm_res.ckmeans_results[1] # k=[2, 3, 4, 5]
     1  3  0.788207  126.358519  0.302979  387.409107
     2  4  0.563343  126.979355  1.214520  271.019424
     3  5  0.339466  128.061382  1.698652  211.080143
-    
 
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_6_1.png?raw=true)
-    
-
 
 <h3 id="ckmeans-sequence-multi">Consensus K-Means: Clustering Sequence Data</h3>
-
 
 ```python
 from pyckmeans import MultiCKMeans, NucleotideAlignment, pcoa
@@ -213,8 +197,6 @@ fig = ckm_res_k7.plot(figsize=(14,14))
 
     Nucleotide alignment: <NucleotideAlignment; #samples: 108, #sites: 6752>
     Eigenvalues:
-    
-
 
 <div>
 <table border="1" class="dataframe">
@@ -322,21 +304,11 @@ fig = ckm_res_k7.plot(figsize=(14,14))
 <p>108 rows × 5 columns</p>
 </div>
 
-
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_8_2.png?raw=true)
-    
 
-
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_8_3.png?raw=true)
-    
-
 
 <h3 id="wecr-sequence">WECR K-Means: Clustering Sequence Data</h3>
-
 
 ```python
 from pyckmeans import WECR, NucleotideAlignment, pcoa
@@ -391,16 +363,7 @@ print(cluster_membership)
     R045-06            0
     R045-25            0
     Length: 108, dtype: int32
-    
 
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_10_1.png?raw=true)
-    
 
-
-
-    
 ![png](https://github.com/TankredO/pyckmeans/blob/main/docs/images/output_10_2.png?raw=true)
-    
-
