@@ -126,7 +126,7 @@ def write_csv_distmat(
             msg = f'File {file_path} already exists. If you want to overwrite ' +\
                 'it run the function with force=True.'
             raise FileExistsError(msg)
-        elif os.path.isdir():
+        elif os.path.isdir(file_path):
             msg = f'A directory exists at path {file_path}.'
             raise FileExistsError(msg)
 
