@@ -457,8 +457,11 @@ class PCOAResult:
                     f'filter_by must be one of {available_filters}.'
                 raise InvalidFilterError(msg)
 
-            idcs = (self.values[filter_by] < filter_th)[:x.shape[1]]
-            x = x[:, idcs]
+            if filter_th >= 1.0:
+                filter_th = 0.9999
+
+            idx = numpy.argmax(self.values[filter_by].values >= filter_th)
+            x = x[:, :(idx+1)]
 
         if out_format not in output_formats:
             msg = f'Invalid out_format argument "{out_format}". ' +\

@@ -384,7 +384,7 @@ class CKmeansResult:
 
         if one_hot:
             mapping = numpy.eye(self.k).astype(int)
-            with open(out_file, 'wb') as out_f:
+            with open(out_file, 'w') as out_f:
                 for cl in self.km_cls:
                     cl_oh_df = pandas.DataFrame(mapping[cl], index=self.names)
                     cl_oh_df.to_csv(
@@ -392,9 +392,9 @@ class CKmeansResult:
                         sep='\t',
                         index=row_names,
                         header=col_names,
-                        mode='binary',
+                        mode='a',
                     )
-                    out_f.writelines([bytes(os.linesep, encoding='UTF-8')])
+                    out_f.write(os.linesep)
         else:
             km_cls_df = pandas.DataFrame(self.km_cls, columns=self.names)
             km_cls_df.to_csv(out_file, sep='\t', index=row_names, header=col_names)

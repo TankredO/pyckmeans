@@ -52,7 +52,7 @@ def test_pcoa_simple(prepare_distmats):
     vectors_1_np = pcoares_0.get_vectors(filter_by='eigvals_rel_cum', filter_th=0.6, out_format='np')
     vectors_1_np_expected = pcoares_0.vectors[
         :,
-        (pcoares_0.values['eigvals_rel_cum'] < 0.6)[:pcoares_0.vectors.shape[1]]
+        :(np.argmax(pcoares_0.values['eigvals_rel_cum'].values >= 0.6)+1)
     ]
     assert vectors_1_np.shape == vectors_1_np_expected.shape
     assert abs(vectors_1_np - vectors_1_np_expected).sum() < 0.0001
@@ -73,7 +73,7 @@ def test_pcoa_simple(prepare_distmats):
     vectors_1_pd = pcoares_1.get_vectors(filter_by='eigvals_rel_cum', filter_th=0.6, out_format='pd')
     vectors_1_np_expected = pcoares_1.vectors[
         :,
-        (pcoares_1.values['eigvals_rel_cum'] < 0.6)[:pcoares_1.vectors.shape[1]]
+        :(np.argmax(pcoares_1.values['eigvals_rel_cum'].values >= 0.6)+1)
     ]
     assert vectors_1_pd.shape == vectors_1_np_expected.shape
     assert abs(vectors_1_pd.values - vectors_1_np_expected).sum() < 0.0001
